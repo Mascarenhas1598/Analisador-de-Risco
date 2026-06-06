@@ -27,6 +27,8 @@ Estado ancorado em `PROJECT_ANCHOR.md`.
 - Indicacao de fatores de baixa pressao, como rivalidade zerada, conflito zerado ou cobertura de seguranca adequada.
 - Botao para gerar PDF da analise usando a impressao do navegador com layout dedicado.
 - Botao alternativo para baixar relatorio HTML completo quando o navegador nao permitir salvar PDF diretamente.
+- Relatorio HTML baixado com layout institucional da NM Engenharia e Consultoria, titulo "Analise de Risco" e referencia do jogo preenchida a partir da aba/campo "Equipes envolvidas".
+- Submit da analise tratado de forma defensiva para garantir que os fatores sejam coletados sempre a partir do formulario `riskForm`.
 - Todas as variaveis do formulario de analise impactam a regressao:
   - equipes envolvidas: gera `historicoEquipesScore`;
   - local do evento: gera `complexidadeLocal`;
