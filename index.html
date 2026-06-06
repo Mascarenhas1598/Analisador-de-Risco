@@ -1,0 +1,1742 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="csrf-token" content="{{csrfToken}}">
+  <title>Analisador de Risco</title>
+  <style>
+    :root {
+      color-scheme: light;
+      font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      --brand-blue: #0878bf;
+      --brand-blue-dark: #075f98;
+      --brand-orange: #f59e0b;
+      --ink: #172033;
+      --muted: #64748b;
+      --surface: #ffffff;
+      --page: #eef5f9;
+      background: var(--page);
+      color: #1f2937;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background:
+        linear-gradient(180deg, rgba(8, 120, 191, 0.1), transparent 280px),
+        var(--page);
+    }
+
+    button,
+    input,
+    select,
+    textarea {
+      font: inherit;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    .login-shell,
+    .app-shell {
+      width: min(100% - 32px, 1120px);
+      margin-inline: auto;
+    }
+
+    .login-shell {
+      max-width: 440px;
+      padding-top: 8vh;
+    }
+
+    .panel {
+      background: var(--surface);
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      box-shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
+    }
+
+    .login-panel {
+      padding: 30px;
+      border-top: 4px solid var(--brand-blue);
+    }
+
+    .login-brand {
+      display: grid;
+      place-items: center;
+      gap: 12px;
+      margin-bottom: 18px;
+      text-align: center;
+    }
+
+    .login-logo {
+      width: min(240px, 72vw);
+      height: auto;
+      display: block;
+    }
+
+    .brand-lockup {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 0;
+    }
+
+    .brand-mark {
+      width: 64px;
+      height: 46px;
+      object-fit: contain;
+      flex: 0 0 auto;
+    }
+
+    .app-shell {
+      padding-block: 32px;
+    }
+
+    .app-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 22px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid rgba(8, 120, 191, 0.18);
+    }
+
+    h1,
+    h2 {
+      margin: 0;
+      line-height: 1.2;
+      letter-spacing: 0;
+    }
+
+    h1 {
+      font-size: 1.6rem;
+      color: var(--ink);
+    }
+
+    h2 {
+      font-size: 1.05rem;
+    }
+
+    .muted {
+      color: var(--muted);
+      margin: 6px 0 0;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    .field {
+      display: grid;
+      gap: 7px;
+    }
+
+    .field-full {
+      grid-column: 1 / -1;
+    }
+
+    label {
+      font-weight: 650;
+      font-size: 0.92rem;
+    }
+
+    input,
+    select,
+    textarea {
+      width: 100%;
+      border: 1px solid #d1d5db;
+      border-radius: 6px;
+      padding: 10px 12px;
+      color: #111827;
+      background: #ffffff;
+      outline: none;
+      transition: border-color 160ms ease, box-shadow 160ms ease;
+    }
+
+    input:focus,
+    select:focus,
+    textarea:focus {
+      border-color: #2563eb;
+      box-shadow: 0 0 0 3px rgba(8, 120, 191, 0.16);
+    }
+
+    textarea {
+      min-height: 110px;
+      resize: vertical;
+    }
+
+    .actions {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 10px;
+      margin-top: 20px;
+    }
+
+    .button {
+      border: 0;
+      border-radius: 6px;
+      min-height: 42px;
+      padding: 0 16px;
+      font-weight: 700;
+      cursor: pointer;
+      color: #ffffff;
+      background: var(--brand-blue);
+    }
+
+    .button:hover {
+      background: var(--brand-blue-dark);
+    }
+
+    .button-secondary {
+      color: #1f2937;
+      background: #e8eef3;
+    }
+
+    .button-secondary:hover {
+      background: #d8e2ea;
+    }
+
+    .button-small {
+      min-height: 34px;
+      padding: 0 12px;
+      font-size: 0.88rem;
+    }
+
+    .section {
+      padding: 22px;
+      margin-bottom: 18px;
+    }
+
+    .status-line {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      color: #4b5563;
+      font-size: 0.92rem;
+    }
+
+    .status-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 999px;
+      background: #9ca3af;
+    }
+
+    .status-dot.green {
+      background: var(--brand-blue);
+    }
+
+    .status-dot.red {
+      background: #dc2626;
+    }
+
+    .result {
+      margin-top: 16px;
+      padding: 14px;
+      border-radius: 6px;
+      background: #f9fafb;
+      border: 1px solid #e5e7eb;
+    }
+
+    .result-summary {
+      display: grid;
+      grid-template-columns: minmax(160px, 220px) minmax(0, 1fr);
+      gap: 18px;
+      align-items: center;
+    }
+
+    .risk-meter {
+      display: grid;
+      place-items: center;
+      width: 160px;
+      height: 160px;
+      border-radius: 999px;
+      background: conic-gradient(var(--risk-color, #16a34a) calc(var(--risk-score, 0) * 1%), #e5e7eb 0);
+      box-shadow: inset 0 0 0 1px #e5e7eb;
+    }
+
+    .risk-meter-inner {
+      display: grid;
+      place-items: center;
+      width: 118px;
+      height: 118px;
+      border-radius: 999px;
+      background: #ffffff;
+      text-align: center;
+    }
+
+    .risk-meter strong {
+      color: #111827;
+      font-size: 1.8rem;
+      line-height: 1;
+    }
+
+    .risk-meter span {
+      color: #6b7280;
+      font-size: 0.82rem;
+    }
+
+    .risk-label {
+      display: inline-flex;
+      width: fit-content;
+      margin-top: 10px;
+      padding: 5px 9px;
+      border-radius: 999px;
+      color: #ffffff;
+      background: var(--risk-color, #16a34a);
+      font-size: 0.84rem;
+      font-weight: 750;
+    }
+
+    .chart-section {
+      margin-top: 20px;
+      display: grid;
+      gap: 14px;
+    }
+
+    .bar-list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .bar-row {
+      display: grid;
+      grid-template-columns: minmax(145px, 220px) minmax(0, 1fr) 52px;
+      gap: 10px;
+      align-items: center;
+      font-size: 0.9rem;
+    }
+
+    .bar-track {
+      height: 11px;
+      overflow: hidden;
+      border-radius: 999px;
+      background: #e5e7eb;
+    }
+
+    .bar-fill {
+      height: 100%;
+      width: var(--bar-width, 0%);
+      border-radius: inherit;
+      background: var(--bar-color, var(--brand-blue));
+    }
+
+    .top-list {
+      margin: 0;
+      padding-left: 20px;
+      color: #374151;
+    }
+
+    .mitigation-panel {
+      margin-top: 20px;
+      padding: 16px;
+      border: 1px solid #dbeafe;
+      border-radius: 8px;
+      background: #f7fbfd;
+    }
+
+    .mitigation-panel h3 {
+      margin: 0 0 10px;
+    }
+
+    .mitigation-list {
+      display: grid;
+      gap: 10px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .mitigation-list li {
+      padding: 10px 12px;
+      border-left: 4px solid var(--brand-blue);
+      border-radius: 6px;
+      background: #ffffff;
+      color: #374151;
+    }
+
+    .mitigation-list strong {
+      display: block;
+      color: #111827;
+      margin-bottom: 3px;
+    }
+
+    .phase-list {
+      display: grid;
+      gap: 12px;
+    }
+
+    .phase-card {
+      padding: 12px;
+      border-left: 4px solid var(--brand-blue);
+      border-radius: 8px;
+      background: #ffffff;
+    }
+
+    .phase-card h4 {
+      margin: 0;
+      color: #111827;
+      font-size: 1rem;
+    }
+
+    .phase-window {
+      margin: 3px 0 8px;
+      color: var(--muted);
+      font-size: 0.86rem;
+      font-weight: 650;
+    }
+
+    .phase-card ul {
+      display: grid;
+      gap: 6px;
+      margin: 0;
+      padding-left: 19px;
+      color: #374151;
+    }
+
+    .scenario-box {
+      margin-top: 14px;
+      padding: 12px;
+      border: 1px solid #bfdbfe;
+      border-radius: 8px;
+      background: #ffffff;
+    }
+
+    .scenario-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    .scenario-metric {
+      padding: 10px;
+      border-radius: 6px;
+      background: #f9fafb;
+      color: #374151;
+    }
+
+    .scenario-metric strong {
+      display: block;
+      color: #111827;
+      font-size: 1.25rem;
+    }
+
+    .mitigation-note {
+      margin: 10px 0 0;
+      color: #4b5563;
+      font-size: 0.9rem;
+    }
+
+    .result-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      margin-top: 18px;
+    }
+
+    .details-text {
+      margin-top: 18px;
+      padding-top: 14px;
+      border-top: 1px solid #e5e7eb;
+      white-space: pre-wrap;
+      color: #374151;
+      font-size: 0.92rem;
+    }
+
+    .history-tools {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-top: 4px;
+    }
+
+    .history-result {
+      margin-top: 8px;
+      padding: 12px;
+      border: 1px solid #dbeafe;
+      border-radius: 6px;
+      background: #eef8ff;
+      color: var(--brand-blue-dark);
+      font-size: 0.9rem;
+      line-height: 1.45;
+    }
+
+    .history-result a {
+      color: var(--brand-blue-dark);
+      font-weight: 650;
+    }
+
+    .link-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px 12px;
+      margin-top: 8px;
+    }
+
+    .toast {
+      position: fixed;
+      right: 18px;
+      bottom: 18px;
+      max-width: min(360px, calc(100vw - 36px));
+      border-radius: 8px;
+      padding: 12px 14px;
+      color: #ffffff;
+      background: #111827;
+      box-shadow: 0 16px 30px rgba(15, 23, 42, 0.18);
+    }
+
+    .toast.erro {
+      background: #b91c1c;
+    }
+
+    .toast.sucesso {
+      background: #047857;
+    }
+
+    .invalid {
+      border-color: #dc2626;
+      box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.12);
+    }
+
+    .shake {
+      animation: shake 240ms ease-in-out 2;
+    }
+
+    @keyframes shake {
+      0%,
+      100% {
+        transform: translateX(0);
+      }
+
+      50% {
+        transform: translateX(4px);
+      }
+    }
+
+    @media (max-width: 720px) {
+      .form-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .app-header {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      .brand-lockup {
+        align-items: flex-start;
+      }
+
+      .actions {
+        justify-content: stretch;
+      }
+
+      .button {
+        width: 100%;
+      }
+
+      .history-tools {
+        align-items: stretch;
+        flex-direction: column;
+      }
+
+      .result-summary {
+        grid-template-columns: 1fr;
+      }
+
+      .risk-meter {
+        margin-inline: auto;
+      }
+
+      .bar-row {
+        grid-template-columns: 1fr;
+        gap: 5px;
+      }
+
+      .scenario-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media print {
+      body {
+        background: #ffffff;
+      }
+
+      body * {
+        visibility: hidden;
+      }
+
+      #resultado,
+      #resultado * {
+        visibility: visible;
+      }
+
+      #resultado {
+        position: absolute;
+        inset: 0 auto auto 0;
+        width: 100%;
+        margin: 0;
+        border: 0;
+        box-shadow: none;
+        background: #ffffff;
+      }
+
+      .no-print {
+        display: none !important;
+      }
+
+      .risk-meter,
+      .bar-track,
+      .bar-fill,
+      .risk-label {
+        print-color-adjust: exact;
+        -webkit-print-color-adjust: exact;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <section id="login" class="login-shell" aria-labelledby="loginTitulo">
+      <form id="loginForm" class="panel login-panel" autocomplete="on" novalidate>
+        <input type="hidden" id="csrfToken" name="_csrf" value="{{csrfToken}}">
+
+        <div class="login-brand">
+          <img class="login-logo" src="assets/nm-logo.png" alt="NM Engenharia e Consultoria">
+          <div>
+            <h1 id="loginTitulo">Acesso ao sistema</h1>
+            <p class="muted">Analisador de risco operacional</p>
+          </div>
+        </div>
+
+        <div class="field" style="margin-top: 22px;">
+          <label for="usuario">Usuário</label>
+          <input id="usuario" name="username" type="text" autocomplete="username" required>
+        </div>
+
+        <div class="field" style="margin-top: 14px;">
+          <label for="senha">Senha</label>
+          <input id="senha" name="password" type="password" autocomplete="current-password" required>
+        </div>
+
+        <div class="actions">
+          <button class="button" type="submit">Entrar</button>
+        </div>
+      </form>
+    </section>
+
+    <section id="app" class="app-shell hidden" aria-labelledby="appTitulo">
+      <header class="app-header">
+        <div class="brand-lockup">
+          <img class="brand-mark" src="assets/nm-logo.png" alt="NM Engenharia e Consultoria">
+          <div>
+            <h1 id="appTitulo">Analisador de Risco</h1>
+            <p class="muted">NM Engenharia e Consultoria</p>
+          </div>
+        </div>
+
+        <button id="logoutButton" class="button button-secondary" type="button">Sair</button>
+      </header>
+
+      <section class="panel section" aria-labelledby="formTitulo">
+        <h2 id="formTitulo">Dados do evento</h2>
+
+        <form id="riskForm" class="form-grid" novalidate>
+          <div class="field field-full">
+            <label for="equipesEnvolvidas">Equipes envolvidas</label>
+            <input id="equipesEnvolvidas" name="equipesEnvolvidas" type="text" required>
+            <input id="historicoEquipesScore" name="historicoEquipesScore" type="hidden" value="0">
+            <div class="history-tools">
+              <p class="muted">Informe as equipes para pesquisar histórico, confrontos, rivalidade e incidentes.</p>
+              <button id="historySearchButton" class="button button-secondary button-small" type="button">Pesquisar histórico</button>
+            </div>
+            <div id="historicoEquipesResultado" class="history-result hidden" aria-live="polite"></div>
+          </div>
+
+          <div class="field">
+            <label for="localEvento">Local do evento</label>
+            <input id="localEvento" name="localEvento" type="text" required>
+          </div>
+
+          <div class="field">
+            <label for="publicoEstimado">Público estimado</label>
+            <input id="publicoEstimado" name="publicoEstimado" type="number" min="0" step="1" required>
+          </div>
+
+          <div class="field">
+            <label for="rivalidadeEquipes">Rivalidade entre equipes (0 a 1)</label>
+            <input id="rivalidadeEquipes" name="rivalidadeEquipes" type="number" min="0" max="1" step="0.01" required>
+          </div>
+
+          <div class="field">
+            <label for="posicaoTabela">Impacto da posição na tabela (0 a 1)</label>
+            <input id="posicaoTabela" name="posicaoTabela" type="number" min="0" max="1" step="0.01" required>
+          </div>
+
+          <div class="field">
+            <label for="tipoCampeonato">Tipo de campeonato</label>
+            <select id="tipoCampeonato" name="tipoCampeonato" required>
+              <option value="">Selecione</option>
+              <option value="amistoso">Amistoso</option>
+              <option value="regional">Regional</option>
+              <option value="estadual">Estadual</option>
+              <option value="nacional">Nacional</option>
+              <option value="continental">Continental</option>
+              <option value="final">Final ou jogo decisivo</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label for="diaSemana">Dia de semana</label>
+            <select id="diaSemana" name="diaSemana" required>
+              <option value="">Selecione</option>
+              <option value="segunda">Segunda-feira</option>
+              <option value="terca">Terça-feira</option>
+              <option value="quarta">Quarta-feira</option>
+              <option value="quinta">Quinta-feira</option>
+              <option value="sexta">Sexta-feira</option>
+              <option value="sabado">Sábado</option>
+              <option value="domingo">Domingo</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label for="meteorologia">Meteorologia prevista</label>
+            <select id="meteorologia" name="meteorologia" required>
+              <option value="">Selecione</option>
+              <option value="favoravel">Favorável</option>
+              <option value="instavel">Instável</option>
+              <option value="chuva">Chuva</option>
+              <option value="severa">Severa</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label for="conflitoTorcidaClube">Conflitos torcida x clube (0 a 1)</label>
+            <input id="conflitoTorcidaClube" name="conflitoTorcidaClube" type="number" min="0" max="1" step="0.01" required>
+          </div>
+
+          <div class="field">
+            <label for="segurancasPrivados">Seguranças privados empregados</label>
+            <input id="segurancasPrivados" name="segurancasPrivados" type="number" min="0" step="1" required>
+          </div>
+
+          <div class="field field-full">
+            <label for="observacoes">Observações</label>
+            <textarea id="observacoes" name="observacoes"></textarea>
+          </div>
+
+          <div class="actions field-full">
+            <button class="button" type="submit">Analisar</button>
+          </div>
+        </form>
+      </section>
+
+      <section class="panel section" aria-labelledby="statusTitulo">
+        <h2 id="statusTitulo">Status da análise</h2>
+        <p class="status-line">
+          <span id="apiStatusDot" class="status-dot" aria-hidden="true"></span>
+          <span id="apiStatus">Aguardando consulta</span>
+        </p>
+        <div id="resultado" class="result hidden"></div>
+      </section>
+    </section>
+  </main>
+
+  <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
+
+  <script>
+    class RiskAnalyzer {
+      constructor() {
+        this.model = null;
+        this.trainingData = [];
+      }
+
+      async fetchGoogleData(factors) {
+        const response = await fetch('/api/google-search', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${getAuthToken()}`
+          },
+          body: JSON.stringify({
+            query: `${factors.equipesEnvolvidas} ${factors.localEvento} seguranca`
+          })
+        });
+
+        if (!response.ok) {
+          throw new Error(`Falha na consulta: ${response.status}`);
+        }
+
+        return response.json();
+      }
+
+      async analisar(factors) {
+        if (isSessaoLocal()) {
+          updateAPIStatus('Analise local concluida', 'green');
+          return criarResultadoLocal(factors);
+        }
+
+        updateAPIStatus('Consultando dados externos', 'green');
+        const googleData = await this.fetchGoogleData(factors);
+
+        return {
+          risco: calcularPontuacaoRisco(factors),
+          fontes: googleData.items || [],
+          resumo: googleData.summary || 'Consulta concluida sem resumo retornado.'
+        };
+      }
+    }
+
+    const analyzer = new RiskAnalyzer();
+    const HISTORICO_CACHE = new Map();
+    let historicoTimer = null;
+    const RIVALIDADES_CONHECIDAS = new Map([
+      ['bahia|vitoria', { score: 0.88, nome: 'Ba-Vi' }],
+      ['bahia|sport', { score: 0.64, nome: 'Superclássico do Nordeste' }],
+      ['bahia|ceara', { score: 0.52, nome: 'confronto regional nordestino' }],
+      ['bahia|fortaleza', { score: 0.5, nome: 'confronto regional nordestino' }],
+      ['bahia|nautico', { score: 0.46, nome: 'confronto regional nordestino' }],
+      ['bahia|santa cruz', { score: 0.44, nome: 'confronto regional nordestino' }],
+      ['flamengo|fluminense', { score: 0.74, nome: 'Fla-Flu' }],
+      ['flamengo|vasco', { score: 0.72, nome: 'Clássico dos Milhões' }],
+      ['corinthians|palmeiras', { score: 0.78, nome: 'Derby Paulista' }],
+      ['gremio|internacional', { score: 0.8, nome: 'Grenal' }],
+      ['atletico mineiro|cruzeiro', { score: 0.76, nome: 'Clássico Mineiro' }],
+      ['santa cruz|sport', { score: 0.74, nome: 'Clássico das Multidões' }]
+    ]);
+    const LOGISTIC_MODEL = {
+      intercepto: -2.25,
+      coeficientes: {
+        publico: 1.1,
+        historicoEquipes: 0.85,
+        rivalidadeEquipes: 1.25,
+        posicaoTabela: 0.65,
+        tipoCampeonato: 0.75,
+        diaSemana: 0.45,
+        meteorologia: 0.85,
+        conflitoTorcidaClube: 1.15,
+        riscoSeguranca: 0.8,
+        complexidadeLocal: 0.55,
+        sinaisObservacoes: 0.65
+      }
+    };
+
+    async function handleLogin(event) {
+      event.preventDefault();
+
+      if (!validarFormulario(event.currentTarget)) {
+        mostrarNotificacao('Preencha usuario e senha.', 'erro');
+        return;
+      }
+
+      const username = document.getElementById('usuario').value.trim();
+      const password = document.getElementById('senha').value;
+
+      try {
+        const response = await fetch('/api/login', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': getCSRFToken()
+          },
+          body: JSON.stringify({
+            username,
+            password
+          })
+        });
+
+        if (!response.ok) {
+          mostrarNotificacao('Falha na autenticacao.', 'erro');
+          return;
+        }
+
+        const data = await response.json();
+        concluirLogin(data.token, data.mode);
+        mostrarNotificacao('Login realizado com sucesso.', 'sucesso');
+      } catch (error) {
+        console.error('Erro no login:', error);
+        mostrarNotificacao('Erro de conexao.', 'erro');
+      }
+    }
+
+    function concluirLogin(token, mode) {
+      sessionStorage.setItem('authToken', token);
+      sessionStorage.setItem('authMode', mode || 'api');
+      document.getElementById('login').classList.add('hidden');
+      document.getElementById('app').classList.remove('hidden');
+    }
+
+    function isSessaoLocal() {
+      return sessionStorage.getItem('authMode') === 'local';
+    }
+
+    async function pesquisarHistoricoEquipes() {
+      const input = document.getElementById('equipesEnvolvidas');
+      const query = input.value.trim();
+
+      if (query.length < 5) {
+        limparHistoricoEquipes();
+        return null;
+      }
+
+      if (HISTORICO_CACHE.has(query)) {
+        const cached = HISTORICO_CACHE.get(query);
+        aplicarHistoricoEquipes(cached);
+        return cached;
+      }
+
+      aplicarHistoricoStatus('Pesquisando histórico das equipes...');
+
+      try {
+        const response = await fetch('/api/historico-equipes', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${getAuthToken()}`
+          },
+          body: JSON.stringify({ equipes: query })
+        });
+
+        if (!response.ok) {
+          throw new Error(`Falha na consulta de histórico: ${response.status}`);
+        }
+
+        const data = await response.json();
+        const normalized = normalizarHistoricoEquipes(query, data);
+        HISTORICO_CACHE.set(query, normalized);
+        aplicarHistoricoEquipes(normalized);
+        return normalized;
+      } catch (error) {
+        const fallback = criarHistoricoLocal(query);
+        HISTORICO_CACHE.set(query, fallback);
+        aplicarHistoricoEquipes(fallback);
+        return fallback;
+      }
+    }
+
+    function criarHistoricoLocal(query) {
+      const equipes = separarEquipes(query);
+      const estimativa = estimarHistoricoLocal(equipes, query);
+      const pesquisaBase = encodeURIComponent(`${query} historico confrontos rivalidade incidentes torcida`);
+
+      return {
+        score: estimativa.score,
+        origem: 'local',
+        resumo: estimativa.resumo,
+        links: [
+          { label: 'Histórico de confrontos', url: `https://www.google.com/search?q=${pesquisaBase}` },
+          { label: 'Notícias recentes', url: `https://www.google.com/search?tbm=nws&q=${pesquisaBase}` },
+          { label: 'Incidentes de torcida', url: `https://www.google.com/search?q=${encodeURIComponent(`${query} incidentes torcida segurança estádio`)}` }
+        ]
+      };
+    }
+
+    function estimarHistoricoLocal(equipes, query) {
+      if (equipes.length < 2) {
+        return {
+          score: 0,
+          resumo: 'Informe duas equipes para calcular histórico entre times. Com apenas uma equipe, o score histórico fica zerado.'
+        };
+      }
+
+      const chave = criarChaveEquipes(equipes);
+      const rivalidade = RIVALIDADES_CONHECIDAS.get(chave);
+
+      if (rivalidade) {
+        return {
+          score: rivalidade.score,
+          resumo: `Histórico externo não conectado. Estimativa local identificou ${rivalidade.nome} entre ${equipes.join(' x ')}.`
+        };
+      }
+
+      const texto = normalizarTexto(query);
+      const temTermoDeRivalidade = /\b(classico|cl[aá]ssico|rival|derby|decisivo|final)\b/.test(texto);
+      const equipesNormalizadas = equipes.map(normalizarNomeEquipe);
+      const envolveBahia = equipesNormalizadas.includes('bahia');
+      const temClubeRegional = equipesNormalizadas.some((equipe) =>
+        ['vitoria', 'sport', 'ceara', 'fortaleza', 'nautico', 'santa cruz', 'crb', 'csa'].includes(equipe)
+      );
+      const temGrandeNacional = equipesNormalizadas.some((equipe) =>
+        ['flamengo', 'fluminense', 'vasco', 'botafogo', 'corinthians', 'palmeiras', 'sao paulo', 'santos', 'gremio', 'internacional', 'cruzeiro', 'atletico mineiro'].includes(equipe)
+      );
+      let score = 0.24;
+
+      if (envolveBahia && temClubeRegional) {
+        score = 0.42;
+      } else if (envolveBahia && temGrandeNacional) {
+        score = 0.38;
+      } else if (temClubeRegional) {
+        score = 0.36;
+      } else if (temGrandeNacional) {
+        score = 0.34;
+      }
+
+      if (temTermoDeRivalidade) {
+        score = Math.min(score + 0.16, 0.62);
+      }
+
+      return {
+        score,
+        resumo: temTermoDeRivalidade
+          ? `Histórico externo não conectado. Termos de rivalidade foram detectados em ${equipes.join(' x ')}.`
+          : `Histórico externo não conectado. Foram identificadas ${equipes.join(' x ')} para pesquisa assistida, mas sem rivalidade local cadastrada.`
+      };
+    }
+
+    function normalizarHistoricoEquipes(query, data) {
+      return {
+        score: limitarNumero(Number(data.score ?? data.risco ?? 0.35), 0, 1),
+        origem: data.origem || 'api',
+        resumo: data.resumo || `Histórico consultado para ${query}.`,
+        links: Array.isArray(data.links) ? data.links : []
+      };
+    }
+
+    function aplicarHistoricoStatus(message) {
+      const panel = document.getElementById('historicoEquipesResultado');
+      panel.classList.remove('hidden');
+      panel.textContent = message;
+    }
+
+    function aplicarHistoricoEquipes(data) {
+      const scoreInput = document.getElementById('historicoEquipesScore');
+      const panel = document.getElementById('historicoEquipesResultado');
+
+      scoreInput.value = String(data.score);
+      panel.classList.remove('hidden');
+      panel.innerHTML = [
+        `<strong>Histórico das equipes:</strong> ${escaparHTML(data.resumo)}`,
+        `<br>Score histórico: ${(data.score * 100).toFixed(0)}%`,
+        renderizarLinksHistorico(data.links)
+      ].join('');
+    }
+
+    function limparHistoricoEquipes() {
+      document.getElementById('historicoEquipesScore').value = '0';
+      document.getElementById('historicoEquipesResultado').classList.add('hidden');
+    }
+
+    function renderizarLinksHistorico(links) {
+      if (!links.length) return '';
+
+      return `<div class="link-list">${links.map((link) =>
+        `<a href="${escaparAtributo(link.url)}" target="_blank" rel="noopener noreferrer">${escaparHTML(link.label)}</a>`
+      ).join('')}</div>`;
+    }
+
+    function separarEquipes(query) {
+      return query
+        .split(/\s+(?:x|vs|versus|contra)\s+|[,;/]/i)
+        .map((item) => item.trim())
+        .filter(Boolean)
+        .slice(0, 2);
+    }
+
+    function criarChaveEquipes(equipes) {
+      return equipes
+        .map(normalizarNomeEquipe)
+        .sort()
+        .join('|');
+    }
+
+    function normalizarNomeEquipe(value) {
+      const texto = normalizarTexto(value);
+
+      if (texto.includes('vitoria')) return 'vitoria';
+      if (texto.includes('bahia')) return 'bahia';
+      if (texto.includes('flamengo')) return 'flamengo';
+      if (texto.includes('fluminense')) return 'fluminense';
+      if (texto.includes('vasco')) return 'vasco';
+      if (texto.includes('botafogo')) return 'botafogo';
+      if (texto.includes('corinthians')) return 'corinthians';
+      if (texto.includes('palmeiras')) return 'palmeiras';
+      if (texto.includes('sao paulo')) return 'sao paulo';
+      if (texto.includes('santos')) return 'santos';
+      if (texto.includes('gremio')) return 'gremio';
+      if (texto.includes('internacional')) return 'internacional';
+      if (texto.includes('atletico') && texto.includes('mineiro')) return 'atletico mineiro';
+      if (texto.includes('cruzeiro')) return 'cruzeiro';
+      if (texto.includes('santa cruz')) return 'santa cruz';
+      if (texto.includes('sport')) return 'sport';
+      if (texto.includes('ceara')) return 'ceara';
+      if (texto.includes('fortaleza')) return 'fortaleza';
+      if (texto.includes('nautico')) return 'nautico';
+      if (texto.includes('crb')) return 'crb';
+      if (texto.includes('csa')) return 'csa';
+
+      return texto;
+    }
+
+    function normalizarTexto(value) {
+      return String(value)
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-z0-9\s]/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+    }
+
+    function limitarNumero(value, min, max) {
+      if (Number.isNaN(value)) return min;
+      return Math.min(Math.max(value, min), max);
+    }
+
+    function escaparHTML(value) {
+      return String(value)
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#039;');
+    }
+
+    function escaparAtributo(value) {
+      return escaparHTML(value).replaceAll('`', '&#096;');
+    }
+
+    function criarResultadoLocal(factors) {
+      const risco = calcularPontuacaoRisco(factors);
+      let nivel = 'baixo';
+
+      if (risco >= 70) {
+        nivel = 'alto';
+      } else if (risco >= 40) {
+        nivel = 'moderado';
+      }
+
+      return {
+        risco,
+        fontes: [],
+        resumo: `Analise local para ${factors.equipesEnvolvidas} em ${factors.localEvento}. Risco ${nivel}, estimado por regressao logistica com publico, historico pesquisado, rivalidade, tabela, campeonato, dia, meteorologia, conflitos, seguranca privada, complexidade do local e sinais nas observacoes.`,
+        detalhes: gerarDetalhesAnalise(factors)
+      };
+    }
+
+    async function handleRiskSubmit(event) {
+      event.preventDefault();
+
+      if (!validarFormulario(event.currentTarget)) {
+        mostrarNotificacao('Revise os campos obrigatorios.', 'erro');
+        return;
+      }
+
+      if (document.getElementById('equipesEnvolvidas').value.trim().length >= 5) {
+        await pesquisarHistoricoEquipes();
+      }
+
+      const factors = coletarFatores(event.currentTarget);
+
+      try {
+        const resultado = await analyzer.analisar(factors);
+        resultado.factors = factors;
+        renderResultado(resultado);
+        updateAPIStatus('Consulta concluida', 'green');
+      } catch (error) {
+        console.error('Erro na API:', error);
+        updateAPIStatus('API externa indisponivel', 'red');
+        mostrarNotificacao('Nao foi possivel consultar a API externa.', 'erro');
+      }
+    }
+
+    function validarFormulario(form) {
+      let isValid = true;
+
+      form.querySelectorAll('[required]').forEach((input) => {
+        const value = input.value.trim();
+        const numberValue = Number(input.value);
+        const min = input.min === '' ? null : Number(input.min);
+        const max = input.max === '' ? null : Number(input.max);
+
+        const invalidText = !value;
+        const invalidNumber = input.type === 'number' && (
+          Number.isNaN(numberValue) ||
+          (min !== null && numberValue < min) ||
+          (max !== null && numberValue > max)
+        );
+
+        if (invalidText || invalidNumber) {
+          input.classList.add('shake', 'invalid');
+          isValid = false;
+          window.setTimeout(() => input.classList.remove('shake'), 600);
+        } else {
+          input.classList.remove('invalid');
+        }
+      });
+
+      return isValid;
+    }
+
+    function coletarFatores(form) {
+      const formData = new FormData(form);
+      const factors = Object.fromEntries(formData.entries());
+
+      [
+        'publicoEstimado',
+        'historicoEquipesScore',
+        'rivalidadeEquipes',
+        'posicaoTabela',
+        'conflitoTorcidaClube',
+        'segurancasPrivados'
+      ].forEach((field) => {
+        factors[field] = Number(factors[field] || 0);
+      });
+
+      return factors;
+    }
+
+    function calcularPontuacaoRisco(factors) {
+      const modelo = calcularRegressaoLogistica(factors);
+      return Math.round(modelo.probabilidade * 100);
+    }
+
+    function calcularRegressaoLogistica(factors) {
+      const variaveis = montarVariaveisLogisticas(factors);
+      const z = LOGISTIC_MODEL.intercepto + Object.entries(LOGISTIC_MODEL.coeficientes).reduce((total, [nome, coeficiente]) => {
+        return total + coeficiente * (variaveis[nome] || 0);
+      }, 0);
+      const probabilidade = 1 / (1 + Math.exp(-z));
+
+      return {
+        z,
+        probabilidade,
+        variaveis
+      };
+    }
+
+    function montarVariaveisLogisticas(factors) {
+      const publico = Math.min(factors.publicoEstimado / 50000, 1);
+      const historicoEquipes = limitarNumero(factors.historicoEquipesScore, 0, 1);
+      const coberturaPrivada = calcularCoberturaSegurancaPrivada(factors.publicoEstimado, factors.segurancasPrivados);
+      const riscoSeguranca = coberturaPrivada.risco;
+      const campeonato = pesoPorValor(factors.tipoCampeonato, {
+        amistoso: 0.1,
+        regional: 0.35,
+        estadual: 0.45,
+        nacional: 0.6,
+        continental: 0.75,
+        final: 1
+      });
+      const dia = pesoPorValor(factors.diaSemana, {
+        segunda: 0.25,
+        terca: 0.25,
+        quarta: 0.35,
+        quinta: 0.35,
+        sexta: 0.65,
+        sabado: 0.85,
+        domingo: 0.8
+      });
+      const meteorologia = pesoPorValor(factors.meteorologia, {
+        favoravel: 0.05,
+        instavel: 0.35,
+        chuva: 0.6,
+        severa: 1
+      });
+      const complexidadeLocal = calcularComplexidadeLocal(factors.localEvento);
+      const sinaisObservacoes = calcularSinaisObservacoes(factors.observacoes);
+
+      return {
+        publico,
+        historicoEquipes,
+        rivalidadeEquipes: limitarNumero(factors.rivalidadeEquipes, 0, 1),
+        posicaoTabela: limitarNumero(factors.posicaoTabela, 0, 1),
+        tipoCampeonato: campeonato,
+        diaSemana: dia,
+        meteorologia,
+        conflitoTorcidaClube: limitarNumero(factors.conflitoTorcidaClube, 0, 1),
+        riscoSeguranca,
+        complexidadeLocal,
+        sinaisObservacoes
+      };
+    }
+
+    function calcularCoberturaSegurancaPrivada(publicoEstimado, segurancasPrivados) {
+      const publico = Math.max(Number(publicoEstimado) || 0, 0);
+      const segurancas = Math.max(Number(segurancasPrivados) || 0, 0);
+      const necessarios = Math.max(Math.ceil(publico / 100), 1);
+      const cobertura = Math.min(segurancas / necessarios, 1);
+
+      return {
+        necessarios,
+        cobertura,
+        risco: 1 - cobertura
+      };
+    }
+
+    function calcularComplexidadeLocal(localEvento) {
+      const texto = normalizarTexto(localEvento);
+
+      if (!texto) return 0;
+      if (/\b(rua|avenida|praca|entorno|via publica|aberto|fan fest)\b/.test(texto)) return 0.72;
+      if (/\b(estadio|arena|complexo esportivo)\b/.test(texto)) return 0.48;
+      if (/\b(ginasio|centro esportivo|clube)\b/.test(texto)) return 0.36;
+      if (/\b(bar|restaurante|shopping|estacionamento)\b/.test(texto)) return 0.42;
+
+      return 0.25;
+    }
+
+    function calcularSinaisObservacoes(observacoes) {
+      const texto = normalizarTexto(observacoes);
+
+      if (!texto) return 0;
+
+      const sinais = [
+        'ameaca',
+        'briga',
+        'confronto',
+        'confusao',
+        'invasao',
+        'protesto',
+        'emboscada',
+        'pirotecnia',
+        'sinalizador',
+        'alcool',
+        'tumulto',
+        'torcida organizada'
+      ];
+      const ocorrencias = sinais.filter((sinal) => texto.includes(sinal)).length;
+
+      return Math.min(ocorrencias * 0.14, 0.7);
+    }
+
+    function pesoPorValor(value, weights) {
+      return weights[value] || 0;
+    }
+
+    function gerarDetalhesAnalise(factors) {
+      const modelo = calcularRegressaoLogistica(factors);
+      const variaveis = modelo.variaveis;
+      const coberturaPrivada = calcularCoberturaSegurancaPrivada(factors.publicoEstimado, factors.segurancasPrivados);
+
+      return [
+        'Metodologia: regressão logística',
+        'Equação: P(risco) = 1 / (1 + exp(-z))',
+        `Logit z: ${modelo.z.toFixed(3)}`,
+        `Probabilidade estimada: ${(modelo.probabilidade * 100).toFixed(1)}%`,
+        'Coeficientes: iniciais e calibráveis; devem ser treinados com base histórica real para validação estatística.',
+        `Público: ${factors.publicoEstimado.toLocaleString('pt-BR')}`,
+        `Histórico pesquisado: ${(factors.historicoEquipesScore * 100).toFixed(0)}%`,
+        `Rivalidade: ${(factors.rivalidadeEquipes * 100).toFixed(0)}%`,
+        `Posição de tabela: ${(factors.posicaoTabela * 100).toFixed(0)}%`,
+        `Complexidade do local: ${(variaveis.complexidadeLocal * 100).toFixed(0)}%`,
+        `Campeonato: ${formatarValor(factors.tipoCampeonato)}`,
+        `Dia: ${formatarValor(factors.diaSemana)}`,
+        `Meteorologia: ${formatarValor(factors.meteorologia)}`,
+        `Conflitos torcida x clube: ${(factors.conflitoTorcidaClube * 100).toFixed(0)}%`,
+        `Seguranças privados: ${factors.segurancasPrivados.toLocaleString('pt-BR')}`,
+        `Referência 1/100: ${coberturaPrivada.necessarios.toLocaleString('pt-BR')} seguranças necessários`,
+        `Cobertura de segurança privada: ${(coberturaPrivada.cobertura * 100).toFixed(0)}%`,
+        `Risco por déficit de segurança: ${(variaveis.riscoSeguranca * 100).toFixed(0)}%`,
+        `Sinais nas observações: ${(variaveis.sinaisObservacoes * 100).toFixed(0)}%`
+      ];
+    }
+
+    function formatarValor(value) {
+      if (!value) return 'não informado';
+      return value.charAt(0).toUpperCase() + value.slice(1).replaceAll('-', ' ');
+    }
+
+    function renderResultado(data) {
+      const resultado = document.getElementById('resultado');
+      resultado.classList.remove('hidden');
+      const modelo = calcularRegressaoLogistica(data.factors);
+      const contribuicoes = montarContribuicoesGrafico(modelo);
+      const topContribuicoes = contribuicoes.slice(0, 3);
+      const acoesMitigacao = gerarAcoesMitigacao(data.risco, modelo, data.factors);
+      const cenarioMitigado = calcularCenarioMitigado(data.factors);
+      const fatoresBaixos = montarFatoresBaixaPressao(modelo);
+      const linhas = [
+        `Pontuacao de risco: ${data.risco}/100`,
+        `Resumo: ${data.resumo}`,
+        `Fontes retornadas: ${data.fontes.length}`
+      ];
+
+      if (data.detalhes && data.detalhes.length) {
+        linhas.push('', 'Detalhes:', ...data.detalhes);
+      }
+
+      const cor = corPorRisco(data.risco);
+      resultado.style.setProperty('--risk-color', cor);
+      resultado.style.setProperty('--risk-score', data.risco);
+      resultado.innerHTML = `
+        <div class="result-summary">
+          <div class="risk-meter" aria-label="Pontuacao de risco ${data.risco} de 100">
+            <div class="risk-meter-inner">
+              <strong>${data.risco}</strong>
+              <span>de 100</span>
+            </div>
+          </div>
+          <div>
+            <h3>Risco ${escaparHTML(rotuloRisco(data.risco))}</h3>
+            <p class="muted">${escaparHTML(data.resumo)}</p>
+            <span class="risk-label">${escaparHTML(rotuloRisco(data.risco))}</span>
+          </div>
+        </div>
+
+        <div class="chart-section">
+          <div>
+            <h3>Fatores que mais influenciam o risco</h3>
+            <ol class="top-list">
+              ${topContribuicoes.map((item) => `<li>${escaparHTML(item.label)}: ${item.percentual}%</li>`).join('')}
+            </ol>
+          </div>
+
+          <div class="bar-list">
+            ${contribuicoes.map((item) => renderBarraContribuicao(item)).join('')}
+          </div>
+        </div>
+
+        <div class="mitigation-panel">
+          <h3>Ações recomendadas para mitigação por fase</h3>
+          <div class="phase-list">
+            ${acoesMitigacao.map((fase) => renderFaseMitigacao(fase)).join('')}
+          </div>
+          <div class="scenario-box">
+            <h3>Cenário ajustado após mitigação</h3>
+            <div class="scenario-grid">
+              <div class="scenario-metric">
+                Atual
+                <strong>${data.risco}/100</strong>
+              </div>
+              <div class="scenario-metric">
+                Ajustado
+                <strong>${cenarioMitigado.risco}/100</strong>
+              </div>
+              <div class="scenario-metric">
+                Redução potencial
+                <strong>${cenarioMitigado.reducao} ponto(s)</strong>
+              </div>
+            </div>
+            <p class="mitigation-note">${escaparHTML(cenarioMitigado.descricao)}</p>
+            ${fatoresBaixos.length ? `<p class="mitigation-note">Fatores que já reduzem a pressão do risco: ${escaparHTML(fatoresBaixos.join(', '))}.</p>` : ''}
+          </div>
+        </div>
+
+        <div class="details-text">${escaparHTML(linhas.join('\n'))}</div>
+
+        <div class="result-actions no-print">
+          <button class="button button-secondary" type="button" onclick="gerarPDFAnalise()">Salvar como PDF</button>
+          <button class="button" type="button" onclick="baixarRelatorioAnalise()">Baixar relatório</button>
+        </div>
+      `;
+    }
+
+    function gerarPDFAnalise() {
+      window.print();
+    }
+
+    function baixarRelatorioAnalise() {
+      const resultado = document.getElementById('resultado');
+      const clone = resultado.cloneNode(true);
+      clone.querySelectorAll('.no-print').forEach((node) => node.remove());
+
+      const styles = document.querySelector('style').textContent;
+      const html = `<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Relatório da Análise de Risco</title>
+  <style>${styles}</style>
+</head>
+<body>
+  <main class="app-shell">
+    <h1>Relatório da Análise de Risco</h1>
+    ${clone.outerHTML}
+  </main>
+</body>
+</html>`;
+      const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      const timestamp = new Date().toISOString().slice(0, 19).replaceAll(':', '-');
+
+      link.href = url;
+      link.download = `analise-risco-${timestamp}.html`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+      mostrarNotificacao('Relatório baixado. Abra o arquivo e salve como PDF se necessário.', 'sucesso');
+    }
+
+    function calcularCenarioMitigado(factors) {
+      const ajustado = { ...factors };
+      const cobertura = calcularCoberturaSegurancaPrivada(factors.publicoEstimado, factors.segurancasPrivados);
+
+      if (cobertura.cobertura < 1) {
+        ajustado.segurancasPrivados = cobertura.necessarios;
+      }
+
+      if (ajustado.conflitoTorcidaClube > 0.3) {
+        ajustado.conflitoTorcidaClube = Math.max(ajustado.conflitoTorcidaClube - 0.3, 0);
+      }
+
+      if (calcularSinaisObservacoes(ajustado.observacoes) > 0) {
+        ajustado.observacoes = '';
+      }
+
+      const riscoAtual = calcularPontuacaoRisco(factors);
+      const riscoAjustado = calcularPontuacaoRisco(ajustado);
+
+      return {
+        risco: riscoAjustado,
+        reducao: Math.max(riscoAtual - riscoAjustado, 0),
+        descricao: 'A simulação mantém fatores não controláveis, como posição de tabela, campeonato, dia e histórico, e ajusta apenas fatores mitigáveis como déficit de segurança, conflitos e sinais críticos nas observações.'
+      };
+    }
+
+    function montarFatoresBaixaPressao(modelo) {
+      const labels = {
+        rivalidadeEquipes: 'rivalidade baixa',
+        conflitoTorcidaClube: 'conflito torcida x clube baixo',
+        sinaisObservacoes: 'sem sinais críticos nas observações',
+        riscoSeguranca: 'cobertura de segurança adequada',
+        meteorologia: 'meteorologia favorável'
+      };
+
+      return Object.entries(labels)
+        .filter(([key]) => (modelo.variaveis[key] || 0) <= 0.05)
+        .map(([, label]) => label);
+    }
+
+    function renderFaseMitigacao(fase) {
+      return `
+        <section class="phase-card">
+          <h4>${escaparHTML(fase.nome)}</h4>
+          <p class="phase-window">${escaparHTML(fase.periodo)}</p>
+          <ul>
+            ${fase.acoes.map((acao) => `<li>${escaparHTML(acao)}</li>`).join('')}
+          </ul>
+        </section>
+      `;
+    }
+
+    function gerarAcoesMitigacao(score, modelo, factors) {
+      const variaveis = modelo.variaveis;
+      const cobertura = calcularCoberturaSegurancaPrivada(factors.publicoEstimado, factors.segurancasPrivados);
+      const deficit = Math.max(cobertura.necessarios - factors.segurancasPrivados, 0);
+      const rivalidadeAlta = variaveis.rivalidadeEquipes >= 0.7 || variaveis.historicoEquipes >= 0.7;
+      const conflitoAtivo = variaveis.conflitoTorcidaClube >= 0.5;
+      const meteoCritica = variaveis.meteorologia >= 0.6;
+      const entornoComplexo = variaveis.complexidadeLocal >= 0.5;
+      const observacaoCritica = variaveis.sinaisObservacoes >= 0.28;
+      const grandePublico = variaveis.publico >= 0.6;
+      const altoRisco = score >= 70;
+
+      return [
+        {
+          nome: 'Fase de montagem',
+          periodo: 'Entre 24 e 8 horas antes da abertura dos portões',
+          acoes: removerTextosDuplicados([
+            'Credenciar e controlar entrada de equipes de catering, TV, limpeza, logística, manutenção e fornecedores.',
+            'Conferir rotas de serviço, docas, áreas técnicas, geradores, comunicação, iluminação e pontos de emergência.',
+            variaveis.riscoSeguranca > 0.05 ? `Ajustar escala de segurança privada antes da operação: referência 1/100 exige ${cobertura.necessarios.toLocaleString('pt-BR')} seguranças; déficit atual de ${deficit.toLocaleString('pt-BR')}.` : 'Confirmar que a escala de segurança privada atende à referência 1/100.',
+            observacaoCritica ? 'Transformar sinais críticos das observações em ordens de serviço com responsável, prazo e canal de acionamento.' : 'Validar checklist de riscos sem pendências críticas nas observações.',
+            meteoCritica ? 'Preparar plano de contingência meteorológica para estruturas temporárias, áreas abertas, drenagem e comunicação ao público.' : null
+          ])
+        },
+        {
+          nome: 'Fase de pré-entrada',
+          periodo: 'Entre 6 e 4 horas antes da abertura dos portões',
+          acoes: removerTextosDuplicados([
+            'Monitorar formação de filas e aglomerações nos filtros de entrada do anel de segurança.',
+            entornoComplexo ? 'Reforçar pontos de concentração no entorno, vias públicas, estacionamentos, praças e gargalos de acesso.' : 'Manter patrulhamento preventivo no entorno e pontos de aproximação.',
+            rivalidadeAlta ? 'Separar fluxos de torcidas desde a chegada, com barreiras, orientação visual e equipes posicionadas nos pontos de cruzamento.' : 'Confirmar orientação de fluxo único e comunicação clara nos acessos.',
+            conflitoAtivo ? 'Acompanhar manifestações ou tensão torcida x clube com equipe de mediação e resposta rápida.' : null,
+            grandePublico ? 'Abrir pontos de orientação, hidratação, banheiros e triagem para reduzir pressão sobre os filtros.' : null
+          ])
+        },
+        {
+          nome: 'Fase de entrada',
+          periodo: 'Entre 4 e 2 horas antes do início da partida',
+          acoes: removerTextosDuplicados([
+            'Dimensionar revista, catracas, filas, acessibilidade e orientação para evitar compressão de público.',
+            variaveis.riscoSeguranca > 0.05 ? 'Reposicionar efetivo para filtros mais carregados e priorizar reforço onde houver déficit de cobertura.' : 'Manter supervisão de cobertura dos postos 1/100 durante a entrada.',
+            rivalidadeAlta ? 'Manter setores e acessos segregados, com escolta e horários diferenciados para grupos visitantes quando aplicável.' : null,
+            meteoCritica ? 'Comunicar condição meteorológica, rotas cobertas e procedimentos de abrigo ou atraso operacional.' : null
+          ])
+        },
+        {
+          nome: 'Fase de jogo',
+          periodo: 'Duração da partida, incluindo intervalo',
+          acoes: removerTextosDuplicados([
+            'Monitorar setores, câmeras, comunicação rádio, atendimento médico e pontos de maior densidade.',
+            variaveis.posicaoTabela >= 0.7 ? 'Reforçar atenção a momentos críticos do placar, decisões de arbitragem e mudanças de resultado por impacto competitivo elevado.' : 'Manter vigilância por gatilhos esportivos durante a partida.',
+            conflitoAtivo || rivalidadeAlta ? 'Manter equipe de resposta rápida próxima aos setores sensíveis e pontos de separação de torcidas.' : null,
+            observacaoCritica ? 'Acompanhar em tempo real os riscos destacados nas observações iniciais.' : null
+          ])
+        },
+        {
+          nome: 'Fase de evacuação',
+          periodo: 'Saída do público para o exterior; 10 a 20 minutos, salvo ordem de saída do público visitante',
+          acoes: removerTextosDuplicados([
+            'Abrir rotas de saída, manter comunicação ao público e evitar cruzamento de fluxos em escadas, rampas, portões e entorno.',
+            rivalidadeAlta ? 'Aplicar saída escalonada ou retenção operacional de público visitante quando definido pela autoridade competente.' : 'Monitorar dispersão sem retenção, salvo necessidade operacional.',
+            entornoComplexo ? 'Reforçar policiamento e segurança nos pontos externos de dispersão e transporte.' : null,
+            meteoCritica ? 'Evitar concentração em áreas alagadas, descobertas ou com risco meteorológico.' : null
+          ])
+        },
+        {
+          nome: 'Fase de fechamento',
+          periodo: 'Confirmação de evacuação de 100% do estádio',
+          acoes: removerTextosDuplicados([
+            'Confirmar evacuação total por setor, sanitários, áreas técnicas, camarotes, imprensa, campo e áreas de serviço.',
+            'Registrar ocorrências, tempos de resposta, falhas operacionais e lições aprendidas para recalibrar a análise futura.',
+            variaveis.riscoSeguranca > 0.05 ? 'Registrar impacto do déficit de segurança privada e ajustar planejamento de efetivo para o próximo evento.' : 'Registrar conformidade da cobertura 1/100 no relatório final.',
+            observacaoCritica || conflitoAtivo ? 'Documentar incidentes e encaminhar medidas corretivas com responsáveis definidos.' : null
+          ])
+        }
+      ];
+    }
+
+    function removerTextosDuplicados(textos) {
+      const vistos = new Set();
+
+      return textos.filter((texto) => {
+        if (!texto || vistos.has(texto)) return false;
+        vistos.add(texto);
+        return true;
+      });
+    }
+
+    function montarContribuicoesGrafico(modelo) {
+      const labels = {
+        publico: 'Público',
+        historicoEquipes: 'Histórico das equipes',
+        rivalidadeEquipes: 'Rivalidade',
+        posicaoTabela: 'Posição de tabela',
+        tipoCampeonato: 'Campeonato',
+        diaSemana: 'Dia da semana',
+        meteorologia: 'Meteorologia',
+        conflitoTorcidaClube: 'Conflito torcida x clube',
+        riscoSeguranca: 'Déficit de segurança',
+        complexidadeLocal: 'Complexidade do local',
+        sinaisObservacoes: 'Observações'
+      };
+
+      return Object.entries(LOGISTIC_MODEL.coeficientes)
+        .map(([key, coeficiente]) => {
+          const valor = modelo.variaveis[key] || 0;
+          const contribuicao = coeficiente * valor;
+
+          return {
+            key,
+            label: labels[key] || key,
+            valor,
+            contribuicao,
+            percentual: Math.round(valor * 100),
+            largura: Math.round(Math.min(contribuicao / 1.25, 1) * 100)
+          };
+        })
+        .sort((a, b) => b.contribuicao - a.contribuicao);
+    }
+
+    function renderBarraContribuicao(item) {
+      return `
+        <div class="bar-row">
+          <span>${escaparHTML(item.label)}</span>
+          <div class="bar-track" aria-hidden="true">
+            <div class="bar-fill" style="--bar-width: ${item.largura}%; --bar-color: ${corPorPercentual(item.percentual)};"></div>
+          </div>
+          <strong>${item.percentual}%</strong>
+        </div>
+      `;
+    }
+
+    function rotuloRisco(score) {
+      if (score >= 70) return 'alto';
+      if (score >= 40) return 'moderado';
+      return 'baixo';
+    }
+
+    function corPorRisco(score) {
+      if (score >= 70) return '#dc2626';
+      if (score >= 40) return '#d97706';
+      return '#16a34a';
+    }
+
+    function corPorPercentual(percentual) {
+      if (percentual >= 70) return '#dc2626';
+      if (percentual >= 40) return '#d97706';
+      return '#2563eb';
+    }
+
+    function getAuthToken() {
+      const token = sessionStorage.getItem('authToken');
+
+      if (!token) {
+        document.getElementById('app').classList.add('hidden');
+        document.getElementById('login').classList.remove('hidden');
+        throw new Error('Usuario nao autenticado.');
+      }
+
+      return token;
+    }
+
+    function getCSRFToken() {
+      return document.getElementById('csrfToken').value ||
+        document.querySelector('meta[name="csrf-token"]').content;
+    }
+
+    function updateAPIStatus(message, color) {
+      const status = document.getElementById('apiStatus');
+      const dot = document.getElementById('apiStatusDot');
+
+      status.textContent = message;
+      dot.className = `status-dot ${color || ''}`.trim();
+    }
+
+    function mostrarNotificacao(mensagem, tipo) {
+      const toast = document.getElementById('toast');
+      toast.textContent = mensagem;
+      toast.className = `toast ${tipo || ''}`;
+      window.setTimeout(() => toast.classList.add('hidden'), 3200);
+    }
+
+    function logout() {
+      sessionStorage.removeItem('authToken');
+      sessionStorage.removeItem('authMode');
+      document.getElementById('app').classList.add('hidden');
+      document.getElementById('login').classList.remove('hidden');
+      document.getElementById('senha').value = '';
+    }
+
+    function agendarPesquisaHistorico() {
+      window.clearTimeout(historicoTimer);
+      historicoTimer = window.setTimeout(() => {
+        pesquisarHistoricoEquipes().catch((error) => {
+          console.error('Erro ao pesquisar histórico:', error);
+        });
+      }, 700);
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      if (location.protocol !== 'https:' && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
+        location.replace(`https://${location.host}${location.pathname}${location.search}`);
+        return;
+      }
+
+      document.getElementById('loginForm').addEventListener('submit', handleLogin);
+      document.getElementById('riskForm').addEventListener('submit', handleRiskSubmit);
+      document.getElementById('logoutButton').addEventListener('click', logout);
+      document.getElementById('historySearchButton').addEventListener('click', pesquisarHistoricoEquipes);
+      document.getElementById('equipesEnvolvidas').addEventListener('input', agendarPesquisaHistorico);
+    });
+  </script>
+</body>
+</html>
