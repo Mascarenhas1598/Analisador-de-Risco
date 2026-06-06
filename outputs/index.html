@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="csrf-token" content="{{csrfToken}}">
   <title>Analisador de Risco</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
   <style>
     :root {
       color-scheme: light;
@@ -1432,17 +1433,62 @@
         <div class="details-text">${escaparHTML(linhas.join('\n'))}</div>
 
         <div class="result-actions no-print">
-          <button class="button button-secondary" type="button" onclick="gerarPDFAnalise()">Salvar como PDF</button>
-          <button class="button" type="button" onclick="baixarRelatorioAnalise()">Baixar relatório</button>
+          <button class="button" type="button" onclick="gerarPDFAnalise()">Baixar PDF</button>
         </div>
       `;
     }
 
-    function gerarPDFAnalise() {
-      window.print();
+    async function gerarPDFAnalise() {
+      if (!window.html2pdf) {
+        mostrarNotificacao('Gerador de PDF indisponivel. Use a impressao do navegador para salvar como PDF.', 'erro');
+        window.print();
+        return;
+      }
+
+      const relatorio = await montarRelatorioAnalise();
+      const host = document.createElement('div');
+
+      host.className = 'pdf-export-host';
+      host.setAttribute('aria-hidden', 'true');
+      host.innerHTML = `<style>${relatorio.styles}</style>${relatorio.bodyHTML}`;
+      document.body.appendChild(host);
+
+      try {
+        await window.html2pdf()
+          .set({
+            margin: 0,
+            filename: relatorio.fileName,
+            image: { type: 'jpeg', quality: 0.96 },
+            html2canvas: {
+              scale: 2,
+              useCORS: true,
+              backgroundColor: '#ffffff'
+            },
+            jsPDF: {
+              unit: 'mm',
+              format: 'a4',
+              orientation: 'portrait'
+            },
+            pagebreak: {
+              mode: ['css', 'legacy']
+            }
+          })
+          .from(host.querySelector('.report-page'))
+          .save();
+        mostrarNotificacao('PDF gerado para download no dispositivo.', 'sucesso');
+      } catch (error) {
+        console.error('Erro ao gerar PDF:', error);
+        mostrarNotificacao('Nao foi possivel gerar o PDF automaticamente.', 'erro');
+      } finally {
+        host.remove();
+      }
     }
 
     async function baixarRelatorioAnalise() {
+      await gerarPDFAnalise();
+    }
+
+    async function montarRelatorioAnalise() {
       const resultado = document.getElementById('resultado');
       const clone = resultado.cloneNode(true);
       clone.querySelectorAll('.no-print').forEach((node) => node.remove());
@@ -1450,7 +1496,18 @@
       const styles = document.querySelector('style').textContent;
       const jogo = document.getElementById('equipesEnvolvidas').value.trim() || 'Equipes nao informadas';
       const logoRelatorio = await carregarImagemRelatorio('assets/nm-logo.png');
+      const timestamp = new Date().toISOString().slice(0, 19).replaceAll(':', '-');
       const reportStyles = `
+        .pdf-export-host {
+          position: fixed;
+          left: -12000px;
+          top: 0;
+          width: 980px;
+          background: #fff;
+          pointer-events: none;
+          z-index: -1;
+        }
+
         body.report-body {
           margin: 0;
           background: #e8eef6;
@@ -1626,15 +1683,7 @@
           }
         }
       `;
-      const html = `<!DOCTYPE html>
-<html lang="pt-br">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Analise de Risco - ${escaparHTML(jogo)}</title>
-  <style>${styles}${reportStyles}</style>
-</head>
-<body class="report-body">
+      const bodyHTML = `
   <main class="report-page">
     <div class="report-corner"></div>
     <header class="report-header">
@@ -1653,21 +1702,26 @@
       <div class="company">NM Engenharia e Consultoria<br>CNPJ 40.727.883/0001-50<br>Rua Waldemar Falcao 227 - Horto Florestal<br>Tel 71 98276-2796</div>
       <div>SEGURANÇA EM ESTÁDIOS</div>
     </footer>
-  </main>
+  </main>`;
+      const documentHTML = `<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Analise de Risco - ${escaparHTML(jogo)}</title>
+  <style>${styles}${reportStyles}</style>
+</head>
+<body class="report-body">
+  ${bodyHTML}
 </body>
 </html>`;
-      const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      const timestamp = new Date().toISOString().slice(0, 19).replaceAll(':', '-');
 
-      link.href = url;
-      link.download = `analise-risco-${timestamp}.html`;
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      URL.revokeObjectURL(url);
-      mostrarNotificacao('Relatório baixado. Abra o arquivo e salve como PDF se necessário.', 'sucesso');
+      return {
+        bodyHTML,
+        documentHTML,
+        fileName: `analise-risco-${timestamp}.pdf`,
+        styles: `${styles}${reportStyles}`
+      };
     }
 
     async function carregarImagemRelatorio(src) {

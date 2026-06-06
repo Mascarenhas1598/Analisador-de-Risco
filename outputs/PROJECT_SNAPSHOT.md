@@ -25,9 +25,9 @@ Estado ancorado em `PROJECT_ANCHOR.md`.
 - Fases contempladas: montagem, pre-entrada, entrada, jogo, evacuacao e fechamento.
 - Cenario ajustado apos mitigacao, mantendo fatores nao controlaveis e simulando reducao de risco em variaveis acionaveis.
 - Indicacao de fatores de baixa pressao, como rivalidade zerada, conflito zerado ou cobertura de seguranca adequada.
-- Botao para gerar PDF da analise usando a impressao do navegador com layout dedicado.
-- Botao alternativo para baixar relatorio HTML completo quando o navegador nao permitir salvar PDF diretamente.
-- Relatorio HTML baixado com layout institucional da NM Engenharia e Consultoria, titulo "Analise de Risco" e referencia do jogo preenchida a partir da aba/campo "Equipes envolvidas".
+- Botao para baixar PDF da analise gerado no dispositivo do usuario, sem armazenamento no servidor.
+- Relatorio PDF com layout institucional da NM Engenharia e Consultoria, titulo "Analise de Risco" e referencia do jogo preenchida a partir da aba/campo "Equipes envolvidas".
+- Fallback por impressao do navegador caso a biblioteca client-side de PDF esteja indisponivel.
 - Submit da analise tratado de forma defensiva para garantir que os fatores sejam coletados sempre a partir do formulario `riskForm`.
 - Todas as variaveis do formulario de analise impactam a regressao:
   - equipes envolvidas: gera `historicoEquipesScore`;
