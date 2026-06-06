@@ -673,6 +673,11 @@
           </div>
 
           <div class="field">
+            <label for="dataJogo">Data</label>
+            <input id="dataJogo" name="dataJogo" type="date">
+          </div>
+
+          <div class="field">
             <label for="publicoEstimado">Público estimado</label>
             <input id="publicoEstimado" name="publicoEstimado" type="number" min="0" step="1" required>
           </div>
@@ -1522,6 +1527,7 @@
 
       const styles = document.querySelector('style').textContent;
       const jogo = document.getElementById('equipesEnvolvidas').value.trim() || 'Equipes nao informadas';
+      const dataJogo = formatarDataRelatorio(document.getElementById('dataJogo').value);
       const logoRelatorio = await carregarImagemRelatorio('assets/nm-logo.png');
       const timestamp = new Date().toISOString().slice(0, 19).replaceAll(':', '-');
       const reportStyles = `
@@ -1634,6 +1640,14 @@
           font-size: 1.08rem;
           font-style: italic;
           line-height: 1.42;
+        }
+
+        .report-date {
+          margin: 6px 0 0;
+          color: #1f2937;
+          font-size: 0.98rem;
+          font-weight: 650;
+          line-height: 1.35;
         }
 
         .report-content {
@@ -1805,6 +1819,7 @@
       <h1>Analise de Risco</h1>
       <div class="report-title-line"></div>
       <p class="report-match">Jogo: ${escaparHTML(jogo)}</p>
+      <p class="report-date">Data: ${escaparHTML(dataJogo)}</p>
     </section>
     <section class="report-content">
       ${clone.outerHTML}
@@ -1851,6 +1866,15 @@
         console.warn('Nao foi possivel embutir a logo no relatorio:', error);
         return src;
       }
+    }
+
+    function formatarDataRelatorio(value) {
+      if (!value) return 'nao informada';
+
+      const [ano, mes, dia] = value.split('-');
+      if (!ano || !mes || !dia) return value;
+
+      return `${dia}/${mes}/${ano}`;
     }
 
     function calcularCenarioMitigado(factors) {
