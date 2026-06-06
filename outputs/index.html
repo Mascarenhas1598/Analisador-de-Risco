@@ -1454,6 +1454,10 @@
       document.body.appendChild(host);
 
       try {
+        const pagina = host.querySelector('.report-page');
+        await aguardarRenderizacaoPDF(host);
+        mostrarNotificacao('Gerando PDF. Aguarde o download iniciar.', 'sucesso');
+
         await window.html2pdf()
           .set({
             margin: 0,
@@ -1462,7 +1466,10 @@
             html2canvas: {
               scale: 2,
               useCORS: true,
-              backgroundColor: '#ffffff'
+              backgroundColor: '#ffffff',
+              scrollX: 0,
+              scrollY: 0,
+              windowWidth: 980
             },
             jsPDF: {
               unit: 'mm',
@@ -1473,7 +1480,7 @@
               mode: ['css', 'legacy']
             }
           })
-          .from(host.querySelector('.report-page'))
+          .from(pagina)
           .save();
         mostrarNotificacao('PDF gerado para download no dispositivo.', 'sucesso');
       } catch (error) {
@@ -1488,6 +1495,25 @@
       await gerarPDFAnalise();
     }
 
+    async function aguardarRenderizacaoPDF(container) {
+      const imagens = Array.from(container.querySelectorAll('img'));
+      const esperarImagem = (img) => img.complete
+        ? Promise.resolve()
+        : new Promise((resolve) => {
+          img.onload = resolve;
+          img.onerror = resolve;
+        });
+
+      await Promise.all(imagens.map((img) => esperarImagem(img)));
+
+      if (document.fonts && document.fonts.ready) {
+        await document.fonts.ready;
+      }
+
+      await new Promise((resolve) => requestAnimationFrame(() => resolve()));
+      await new Promise((resolve) => requestAnimationFrame(() => resolve()));
+    }
+
     async function montarRelatorioAnalise() {
       const resultado = document.getElementById('resultado');
       const clone = resultado.cloneNode(true);
@@ -1500,12 +1526,15 @@
       const reportStyles = `
         .pdf-export-host {
           position: fixed;
-          left: -12000px;
           top: 0;
+          left: 0;
           width: 980px;
+          min-height: 100vh;
+          max-height: none;
+          overflow: visible;
           background: #fff;
           pointer-events: none;
-          z-index: -1;
+          z-index: 2147483647;
         }
 
         body.report-body {
@@ -1522,8 +1551,14 @@
           margin: 0 auto;
           padding: 54px 68px 58px 142px;
           background: #fff;
-          overflow: hidden;
+          overflow: visible;
           box-shadow: 0 24px 70px rgba(15, 23, 42, 0.18);
+        }
+
+        .pdf-export-host .report-page {
+          width: 980px;
+          margin: 0;
+          box-shadow: none;
         }
 
         .report-page::before {
