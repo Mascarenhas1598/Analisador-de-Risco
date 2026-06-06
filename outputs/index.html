@@ -1469,7 +1469,8 @@
               backgroundColor: '#ffffff',
               scrollX: 0,
               scrollY: 0,
-              windowWidth: 980
+              windowWidth: 794,
+              windowHeight: 1123
             },
             jsPDF: {
               unit: 'mm',
@@ -1528,7 +1529,7 @@
           position: fixed;
           top: 0;
           left: 0;
-          width: 980px;
+          width: 794px;
           min-height: 100vh;
           max-height: none;
           overflow: visible;
@@ -1546,17 +1547,17 @@
 
         .report-page {
           position: relative;
-          width: min(100%, 980px);
-          min-height: 1320px;
+          width: 794px;
+          min-height: 1123px;
           margin: 0 auto;
-          padding: 54px 68px 58px 142px;
+          padding: 42px 42px 46px 96px;
           background: #fff;
           overflow: visible;
           box-shadow: 0 24px 70px rgba(15, 23, 42, 0.18);
         }
 
         .pdf-export-host .report-page {
-          width: 980px;
+          width: 794px;
           margin: 0;
           box-shadow: none;
         }
@@ -1565,18 +1566,18 @@
           content: '';
           position: absolute;
           inset: 0 auto 0 0;
-          width: 82px;
+          width: 54px;
           background: linear-gradient(180deg, #073b80 0%, #0059b8 48%, #0ba5e9 100%);
         }
 
         .report-page::after {
           content: '';
           position: absolute;
-          right: -160px;
-          bottom: 120px;
-          width: 430px;
-          height: 430px;
-          border: 34px solid rgba(0, 89, 184, 0.045);
+          right: -130px;
+          bottom: 92px;
+          width: 340px;
+          height: 340px;
+          border: 28px solid rgba(0, 89, 184, 0.045);
           border-radius: 50%;
           pointer-events: none;
         }
@@ -1585,8 +1586,8 @@
           position: absolute;
           top: 0;
           right: 0;
-          width: 220px;
-          height: 180px;
+          width: 170px;
+          height: 138px;
           background: linear-gradient(135deg, transparent 0 42%, rgba(12, 165, 233, 0.16) 43% 58%, #073b80 59%);
         }
 
@@ -1594,13 +1595,13 @@
           position: relative;
           display: flex;
           align-items: center;
-          min-height: 168px;
+          min-height: 124px;
           z-index: 1;
         }
 
         .report-logo {
-          width: 430px;
-          max-width: 78%;
+          width: 342px;
+          max-width: 70%;
           height: auto;
           object-fit: contain;
         }
@@ -1608,13 +1609,13 @@
         .report-title-block {
           position: relative;
           z-index: 1;
-          margin: 30px 0 34px;
+          margin: 22px 0 26px;
         }
 
         .report-title-block h1 {
           margin: 0;
           color: #073b80;
-          font-size: 3.3rem;
+          font-size: 2.65rem;
           line-height: 1.02;
           letter-spacing: 0;
           font-weight: 800;
@@ -1622,15 +1623,15 @@
 
         .report-title-line {
           width: 170px;
-          height: 5px;
-          margin: 20px 0 18px;
+          height: 4px;
+          margin: 16px 0 14px;
           background: #f59e0b;
         }
 
         .report-match {
           margin: 0;
           color: #074c9c;
-          font-size: 1.32rem;
+          font-size: 1.08rem;
           font-style: italic;
           line-height: 1.42;
         }
@@ -1649,6 +1650,82 @@
           box-shadow: none;
         }
 
+        .report-content h3 {
+          font-size: 1.05rem;
+          line-height: 1.25;
+        }
+
+        .report-content p,
+        .report-content li,
+        .report-content .details-text,
+        .report-content .bar-row,
+        .report-content .mitigation-note {
+          font-size: 0.82rem;
+          line-height: 1.42;
+        }
+
+        .report-content .result-summary {
+          grid-template-columns: 124px minmax(0, 1fr);
+          gap: 16px;
+          align-items: center;
+        }
+
+        .report-content .risk-meter {
+          width: 124px;
+          height: 124px;
+        }
+
+        .report-content .risk-meter-inner {
+          width: 92px;
+          height: 92px;
+        }
+
+        .report-content .risk-meter strong {
+          font-size: 1.45rem;
+        }
+
+        .report-content .chart-section,
+        .report-content .mitigation-panel {
+          margin-top: 16px;
+        }
+
+        .report-content .bar-row {
+          grid-template-columns: minmax(130px, 178px) minmax(0, 1fr) 44px;
+          gap: 8px;
+        }
+
+        .report-content .mitigation-panel,
+        .report-content .scenario-box,
+        .report-content .phase-card {
+          border-radius: 6px;
+        }
+
+        .report-content .mitigation-panel {
+          padding: 12px;
+        }
+
+        .report-content .phase-list {
+          gap: 9px;
+        }
+
+        .report-content .phase-card {
+          padding: 10px;
+        }
+
+        .report-content .scenario-grid {
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+          gap: 8px;
+        }
+
+        .report-content .scenario-metric {
+          padding: 8px;
+          font-size: 0.8rem;
+        }
+
+        .report-content .scenario-metric strong {
+          font-size: 1rem;
+        }
+
         .report-content .risk-overview,
         .report-content .chart-panel,
         .report-content .contribution-panel,
@@ -1662,22 +1739,22 @@
           z-index: 1;
           display: grid;
           grid-template-columns: 1fr 1.4fr 1fr;
-          gap: 18px;
+          gap: 12px;
           align-items: center;
-          margin-top: 44px;
-          padding-top: 18px;
+          margin-top: 30px;
+          padding-top: 14px;
           border-top: 2px solid #f59e0b;
           color: #073b80;
-          font-size: 0.92rem;
+          font-size: 0.74rem;
           font-weight: 700;
           text-align: center;
         }
 
         .report-footer .company {
-          padding: 14px 22px;
+          padding: 10px 14px;
           color: #fff;
           background: #073b80;
-          border-radius: 28px 28px 0 0;
+          border-radius: 20px 20px 0 0;
           font-weight: 500;
           line-height: 1.25;
         }

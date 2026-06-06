@@ -28,6 +28,7 @@ Estado ancorado em `PROJECT_ANCHOR.md`.
 - Botao para baixar PDF da analise gerado no dispositivo do usuario, sem armazenamento no servidor.
 - Relatorio PDF com layout institucional da NM Engenharia e Consultoria, titulo "Analise de Risco" e referencia do jogo preenchida a partir da aba/campo "Equipes envolvidas".
 - Captura do PDF ajustada para renderizar o relatorio em area temporaria visivel, aguardar imagens/fontes e evitar pagina em branco.
+- Layout do PDF alinhado para proporcao A4, com largura fixa de captura, margens internas reduzidas e blocos de analise redimensionados para melhor encaixe na pagina.
 - Fallback por impressao do navegador caso a biblioteca client-side de PDF esteja indisponivel.
 - Submit da analise tratado de forma defensiva para garantir que os fatores sejam coletados sempre a partir do formulario `riskForm`.
 - Todas as variaveis do formulario de analise impactam a regressao:
