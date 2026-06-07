@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="csrf-token" content="{{csrfToken}}">
   <title>Analisador de Risco</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
   <style>
     :root {
@@ -1445,8 +1447,7 @@
 
     async function gerarPDFAnalise() {
       if (!window.html2canvas || !window.jspdf || !window.jspdf.jsPDF) {
-        mostrarNotificacao('Gerador de PDF indisponivel. Use a impressao do navegador para salvar como PDF.', 'erro');
-        window.print();
+        mostrarNotificacao('Gerador de PDF indisponivel. Recarregue a pagina e tente novamente.', 'erro');
         return;
       }
 
