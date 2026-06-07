@@ -1452,18 +1452,13 @@
 
       const relatorio = await montarRelatorioAnalise();
       const host = document.createElement('div');
-      const scrollXAtual = window.scrollX;
-      const scrollYAtual = window.scrollY;
 
       host.className = 'pdf-export-host';
       host.setAttribute('aria-hidden', 'true');
       host.innerHTML = `<style>${relatorio.styles}</style>${relatorio.bodyHTML}`;
-      document.body.classList.add('pdf-exporting');
       document.body.appendChild(host);
-      window.scrollTo(0, 0);
 
       try {
-        const pagina = host.querySelector('.report-page');
         await aguardarRenderizacaoPDF(host);
         mostrarNotificacao('Gerando PDF. Aguarde o download iniciar.', 'sucesso');
 
@@ -1491,7 +1486,7 @@
               mode: ['css', 'legacy']
             }
           })
-          .from(pagina)
+          .from(host)
           .save();
         mostrarNotificacao('PDF gerado para download no dispositivo.', 'sucesso');
       } catch (error) {
@@ -1499,8 +1494,6 @@
         mostrarNotificacao('Nao foi possivel gerar o PDF automaticamente.', 'erro');
       } finally {
         host.remove();
-        document.body.classList.remove('pdf-exporting');
-        window.scrollTo(scrollXAtual, scrollYAtual);
       }
     }
 
@@ -1539,24 +1532,18 @@
       const timestamp = new Date().toISOString().slice(0, 19).replaceAll(':', '-');
       const reportStyles = `
         .pdf-export-host {
+          position: fixed;
+          top: 0;
+          left: 0;
           display: block;
           width: 794px;
           min-height: 1123px;
-          margin: 0 auto;
+          margin: 0;
           max-height: none;
           overflow: visible;
           background: #fff;
           pointer-events: none;
-        }
-
-        body.pdf-exporting {
-          margin: 0 !important;
-          background: #fff !important;
-          overflow: visible !important;
-        }
-
-        body.pdf-exporting > :not(.pdf-export-host) {
-          display: none !important;
+          z-index: 2147483647;
         }
 
         body.report-body {
