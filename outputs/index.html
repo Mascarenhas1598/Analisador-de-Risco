@@ -1569,7 +1569,7 @@
           width: 794px;
           min-height: 1123px;
           margin: 0 auto;
-          padding: 38px 48px 42px 92px;
+          padding: 44px 48px 42px 96px;
           background: #fff;
           overflow: visible;
           box-shadow: 0 24px 70px rgba(15, 23, 42, 0.18);
@@ -1630,19 +1630,19 @@
           display: flex;
           align-items: center;
           justify-content: flex-start;
-          min-height: 118px;
+          min-height: 238px;
           padding-right: 120px;
         }
 
         .report-logo {
-          width: 360px;
-          max-width: 76%;
+          width: 390px;
+          max-width: 78%;
           height: auto;
           object-fit: contain;
         }
 
         .report-title-block {
-          margin: 20px 0 20px;
+          margin: 8px 0 28px;
         }
 
         .report-title-block h1 {
@@ -1661,54 +1661,25 @@
           background: #f59e0b;
         }
 
-        .report-subtitle {
+        .report-match {
           margin: 0;
           color: #074c9c;
-          font-size: 1.04rem;
+          font-size: 1.28rem;
           font-style: italic;
+          font-weight: 750;
           line-height: 1.42;
         }
 
-        .report-meta {
-          display: grid;
-          grid-template-columns: 1.4fr 0.75fr;
-          gap: 10px;
-          margin: 18px 0 24px;
-          padding: 12px;
-          border: 1px solid #dbeafe;
-          border-left: 5px solid #f59e0b;
-          border-radius: 8px;
-          background: #f8fbff;
-        }
-
-        .report-meta-item {
-          display: grid;
-          gap: 3px;
-          min-width: 0;
-        }
-
-        .report-meta-item.full {
-          grid-column: 1 / -1;
-        }
-
-        .report-meta-label {
-          color: #64748b;
-          font-size: 0.68rem;
-          font-weight: 800;
-          letter-spacing: 0.04em;
-          text-transform: uppercase;
-        }
-
-        .report-meta-value {
-          color: #0f172a;
-          font-size: 0.92rem;
-          font-weight: 700;
+        .report-reference {
+          margin: 5px 0 0;
+          color: #334155;
+          font-size: 0.86rem;
+          font-weight: 650;
           line-height: 1.35;
         }
 
         .report-content {
-          display: grid;
-          gap: 16px;
+          display: block;
         }
 
         .report-content .result {
@@ -1721,32 +1692,10 @@
           overflow: visible;
         }
 
-        .report-section-heading {
-          display: flex;
-          align-items: center;
-          gap: 10px;
-          margin: 0 0 12px;
-          color: #073b80;
-          font-size: 1.22rem;
-          line-height: 1.2;
-          font-weight: 800;
-        }
-
-        .report-section-heading::before {
-          content: '';
-          width: 28px;
-          height: 28px;
-          flex: 0 0 auto;
-          border-radius: 50%;
-          background: #073b80;
-          box-shadow: inset 0 0 0 6px #dbeafe;
-        }
-
         .report-card {
-          padding: 16px;
-          border: 1px solid #e2e8f0;
-          border-radius: 8px;
-          background: #ffffff;
+          padding: 0;
+          border: 0;
+          background: transparent;
         }
 
         .report-content h3 {
@@ -1770,9 +1719,9 @@
           gap: 16px;
           align-items: center;
           padding: 12px;
-          border: 1px solid #e2e8f0;
-          border-radius: 8px;
-          background: #f8fbff;
+          border: 0;
+          border-radius: 0;
+          background: transparent;
         }
 
         .report-content .risk-meter {
@@ -1796,8 +1745,8 @@
 
         .report-content .chart-section {
           padding: 14px;
-          border: 1px solid #e2e8f0;
-          border-radius: 8px;
+          border: 0;
+          border-radius: 0;
           background: #ffffff;
         }
 
@@ -1867,10 +1816,9 @@
         }
 
         .report-content .details-text {
-          padding: 12px;
-          border: 1px solid #e2e8f0;
-          border-radius: 8px;
-          background: #ffffff;
+          padding: 16px 0 0;
+          border-top: 1px solid #e5e7eb;
+          background: transparent;
         }
 
         .report-content .risk-overview,
@@ -1880,8 +1828,7 @@
         .report-content .details-text,
         .report-content .phase-card,
         .report-content .scenario-box,
-        .report-card,
-        .report-meta {
+        .report-card {
           break-inside: avoid;
           page-break-inside: avoid;
         }
@@ -1954,27 +1901,12 @@
     <section class="report-title-block">
       <h1>Analise de Risco</h1>
       <div class="report-title-line"></div>
-      <p class="report-subtitle">Relatorio tecnico para analise de risco operacional em jogo de futebol</p>
-    </section>
-    <section class="report-meta">
-      <div class="report-meta-item">
-        <span class="report-meta-label">Jogo</span>
-        <strong class="report-meta-value">${escaparHTML(jogo)}</strong>
-      </div>
-      <div class="report-meta-item">
-        <span class="report-meta-label">Data</span>
-        <strong class="report-meta-value">${escaparHTML(dataJogo)}</strong>
-      </div>
-      <div class="report-meta-item full">
-        <span class="report-meta-label">Local do evento</span>
-        <strong class="report-meta-value">${escaparHTML(localEvento)}</strong>
-      </div>
+      <p class="report-match">Jogo: ${escaparHTML(jogo)}</p>
+      <p class="report-reference">Local do evento: ${escaparHTML(localEvento)}</p>
+      <p class="report-reference">Data: ${escaparHTML(dataJogo)}</p>
     </section>
     <section class="report-content">
-      <div class="report-card">
-        <h2 class="report-section-heading">Conclusao da Analise</h2>
-        ${clone.outerHTML}
-      </div>
+      ${clone.outerHTML}
     </section>
     <footer class="report-footer">
       <div>ANÁLISE DE RISCO</div>
