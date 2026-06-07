@@ -1616,50 +1616,15 @@
       document.body.appendChild(host);
 
       try {
-        const pagina = host.querySelector('.report-page');
         await aguardarRenderizacaoPDF(host);
         mostrarNotificacao('Gerando PDF. Aguarde o download iniciar.', 'sucesso');
 
-        const canvas = await window.html2canvas(pagina, {
-          scale: 2,
-          useCORS: true,
-          allowTaint: true,
-          backgroundColor: '#ffffff',
-          width: pagina.scrollWidth,
-          height: pagina.scrollHeight,
-          windowWidth: pagina.scrollWidth,
-          windowHeight: pagina.scrollHeight,
-          scrollX: 0,
-          scrollY: 0
-        });
-
-        if (!canvas.width || !canvas.height) {
-          throw new Error('Canvas do relatorio sem dimensoes');
-        }
-
         const pdf = new window.jspdf.jsPDF('p', 'mm', 'a4');
-        const pageWidth = 210;
-        const pageHeight = 297;
-        const chartSection = pagina.querySelector('.chart-section');
-        const firstCutPx = chartSection
-          ? Math.ceil((chartSection.offsetTop + chartSection.offsetHeight + 12) * (canvas.width / pagina.scrollWidth))
-          : Math.floor(canvas.width * (pageHeight / pageWidth));
-        const maxPageSlicePx = Math.floor(canvas.width * (pageHeight / pageWidth));
-        let startPx = 0;
-        let sliceIndex = 0;
+        const paginas = Array.from(host.querySelectorAll('.report-page'));
 
-        while (startPx < canvas.height) {
-          const desiredHeight = sliceIndex === 0 ? firstCutPx : maxPageSlicePx;
-          const sliceHeight = Math.min(desiredHeight, canvas.height - startPx);
-          const sliceCanvas = recortarCanvas(canvas, startPx, sliceHeight);
-          const imageData = sliceCanvas.toDataURL('image/jpeg', 0.96);
-          const imageHeightMm = (sliceHeight * pageWidth) / canvas.width;
-
-          if (sliceIndex > 0) pdf.addPage();
-          pdf.addImage(imageData, 'JPEG', 0, 0, pageWidth, imageHeightMm);
-
-          startPx += sliceHeight;
-          sliceIndex += 1;
+        for (let index = 0; index < paginas.length; index += 1) {
+          if (index > 0) pdf.addPage();
+          await adicionarPaginaPDF(pdf, paginas[index]);
         }
 
         pdf.save(relatorio.fileName);
@@ -1676,17 +1641,30 @@
       await gerarPDFAnalise();
     }
 
-    function recortarCanvas(canvas, y, height) {
-      const slice = document.createElement('canvas');
-      slice.width = canvas.width;
-      slice.height = height;
+    async function adicionarPaginaPDF(pdf, pageElement) {
+      const canvas = await window.html2canvas(pageElement, {
+        scale: 2,
+        useCORS: true,
+        allowTaint: true,
+        backgroundColor: '#ffffff',
+        width: pageElement.offsetWidth,
+        height: pageElement.offsetHeight,
+        windowWidth: pageElement.offsetWidth,
+        windowHeight: pageElement.offsetHeight,
+        scrollX: 0,
+        scrollY: 0
+      });
 
-      const context = slice.getContext('2d');
-      context.fillStyle = '#ffffff';
-      context.fillRect(0, 0, slice.width, slice.height);
-      context.drawImage(canvas, 0, y, canvas.width, height, 0, 0, canvas.width, height);
+      if (!canvas.width || !canvas.height) {
+        throw new Error('Canvas do relatorio sem dimensoes');
+      }
 
-      return slice;
+      const pageWidth = 210;
+      const pageHeight = 297;
+      const imageData = canvas.toDataURL('image/jpeg', 0.96);
+      const imageHeight = (canvas.height * pageWidth) / canvas.width;
+
+      pdf.addImage(imageData, 'JPEG', 0, 0, pageWidth, Math.min(imageHeight, pageHeight));
     }
 
     function gerarPlanoOperacional(data, modelo, factors, cenarioMitigado) {
@@ -1839,6 +1817,22 @@
       const localEvento = document.getElementById('localEvento').value.trim() || 'Local nao informado';
       const logoRelatorio = await carregarImagemRelatorio('assets/nm-logo.png');
       const timestamp = new Date().toISOString().slice(0, 19).replaceAll(':', '-');
+      const resultSummaryHTML = clone.querySelector('.result-summary')?.outerHTML || '';
+      const chartHTML = clone.querySelector('.chart-section')?.outerHTML || '';
+      const operationalHTML = clone.querySelector('.operational-plan')?.outerHTML || '';
+      const mitigationPanel = clone.querySelector('.mitigation-panel');
+      const phaseCards = Array.from(mitigationPanel?.querySelectorAll('.phase-card') || []).map((node) => node.outerHTML);
+      const scenarioHTML = mitigationPanel?.querySelector('.scenario-box')?.outerHTML || '';
+      const detailsHTML = clone.querySelector('.details-text')?.outerHTML || '';
+      const mitigationPageOne = phaseCards.slice(0, 3).join('');
+      const mitigationPageTwo = phaseCards.slice(3).join('');
+      const footerHTML = `
+        <footer class="report-footer">
+          <div>ANÁLISE DE RISCO</div>
+          <div class="company">NM Engenharia e Consultoria<br>CNPJ 40.727.883/0001-50<br>Rua Waldemar Falcao 227 - Horto Florestal<br>Tel 71 98276-2796</div>
+          <div>SEGURANÇA EM ESTÁDIOS</div>
+        </footer>
+      `;
       const reportStyles = `
         .pdf-export-host {
           position: absolute;
@@ -1864,12 +1858,14 @@
 
         .report-page {
           position: relative;
+          display: flex;
+          flex-direction: column;
           width: 794px;
-          min-height: 1123px;
+          height: 1123px;
           margin: 0 auto;
           padding: 42px 52px 40px 96px;
           background: #fff;
-          overflow: visible;
+          overflow: hidden;
           box-shadow: 0 24px 70px rgba(15, 23, 42, 0.18);
         }
 
@@ -1922,6 +1918,11 @@
           width: 176px;
           height: 142px;
           background: linear-gradient(135deg, transparent 0 42%, rgba(12, 165, 233, 0.16) 43% 58%, #073b80 59%);
+        }
+
+        .report-corner-small {
+          width: 132px;
+          height: 104px;
         }
 
         .report-header {
@@ -1978,6 +1979,8 @@
 
         .report-content {
           display: block;
+          flex: 1 1 auto;
+          min-height: 0;
         }
 
         .report-content .result {
@@ -2052,8 +2055,6 @@
           border: 0;
           border-radius: 0;
           background: #ffffff;
-          break-after: page;
-          page-break-after: always;
         }
 
         .report-content .top-list {
@@ -2083,8 +2084,35 @@
         }
 
         .report-content .mitigation-panel {
-          padding: 14px;
+          padding: 12px 14px;
           background: #f8fbff;
+        }
+
+        .report-content .operational-plan {
+          margin-top: 0;
+          padding: 12px 14px;
+        }
+
+        .report-content .plan-grid {
+          gap: 8px;
+          margin-bottom: 10px;
+        }
+
+        .report-content .plan-metric {
+          padding: 8px;
+          font-size: 0.78rem;
+        }
+
+        .report-content .plan-metric strong {
+          font-size: 0.9rem;
+        }
+
+        .report-content .plan-columns {
+          gap: 10px;
+        }
+
+        .report-content .plan-list {
+          margin-top: 6px;
         }
 
         .report-content .mitigation-panel h3 {
@@ -2092,11 +2120,11 @@
         }
 
         .report-content .phase-list {
-          gap: 8px;
+          gap: 7px;
         }
 
         .report-content .phase-card {
-          padding: 9px 10px;
+          padding: 8px 10px;
           border-left-color: #073b80;
           box-shadow: 0 1px 0 rgba(15, 23, 42, 0.03);
         }
@@ -2107,7 +2135,7 @@
         }
 
         .report-content .phase-card ul {
-          gap: 4px;
+          gap: 3px;
         }
 
         .report-content .scenario-grid {
@@ -2147,7 +2175,7 @@
           grid-template-columns: 1fr 1.55fr 1fr;
           gap: 12px;
           align-items: center;
-          margin-top: 34px;
+          margin-top: auto;
           padding-top: 13px;
           border-top: 2px solid #f59e0b;
           color: #073b80;
@@ -2208,7 +2236,7 @@
         }
       `;
       const bodyHTML = `
-  <main class="report-page">
+  <main class="report-page report-page-cover">
     <div class="report-corner"></div>
     <header class="report-header">
       <img class="report-logo" src="${logoRelatorio}" alt="NM Engenharia e Consultoria">
@@ -2221,13 +2249,39 @@
       <p class="report-reference">Data: ${escaparHTML(dataJogo)}</p>
     </section>
     <section class="report-content">
-      ${clone.outerHTML}
+      ${resultSummaryHTML}
+      ${chartHTML}
     </section>
-    <footer class="report-footer">
-      <div>ANÁLISE DE RISCO</div>
-      <div class="company">NM Engenharia e Consultoria<br>CNPJ 40.727.883/0001-50<br>Rua Waldemar Falcao 227 - Horto Florestal<br>Tel 71 98276-2796</div>
-      <div>SEGURANÇA EM ESTÁDIOS</div>
-    </footer>
+    ${footerHTML}
+  </main>
+
+  <main class="report-page">
+    <div class="report-corner report-corner-small"></div>
+    <section class="report-content">
+      ${operationalHTML}
+      <div class="mitigation-panel">
+        <h3>Ações recomendadas para mitigação por fase</h3>
+        <div class="phase-list">
+          ${mitigationPageOne}
+        </div>
+      </div>
+    </section>
+    ${footerHTML}
+  </main>
+
+  <main class="report-page">
+    <div class="report-corner report-corner-small"></div>
+    <section class="report-content">
+      <div class="mitigation-panel">
+        <h3>Ações recomendadas para mitigação por fase</h3>
+        <div class="phase-list">
+          ${mitigationPageTwo}
+        </div>
+        ${scenarioHTML}
+      </div>
+      ${detailsHTML}
+    </section>
+    ${footerHTML}
   </main>`;
       const documentHTML = `<!DOCTYPE html>
 <html lang="pt-br">

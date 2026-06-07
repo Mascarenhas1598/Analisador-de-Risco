@@ -35,7 +35,7 @@ Estado ancorado em `PROJECT_ANCHOR.md`.
 - Exportacao PDF refinada para computador: captura realizada manualmente com `html2canvas` e montagem do PDF com `jsPDF`, evitando o clone automatico do `html2pdf` que podia gerar paginas em branco.
 - Layout institucional do PDF reaplicado conforme documento de referencia: barra azul lateral, canto superior azul, logo em destaque, titulo "Analise de Risco", linha laranja, jogo em italico, local/data em texto discreto, conteudo fluido e rodape alinhado.
 - Ajuste fino de simetria do PDF: margens A4 refinadas, cabecalho proporcional, area de conteudo alinhada, medidor/barras com colunas estaveis e rodape com espacamento regular.
-- Paginacao do PDF configurada para encerrar a primeira pagina ao final da secao de grafico/fatores e iniciar plano operacional/mitigacao na segunda pagina.
+- Paginacao do PDF reconfigurada com paginas A4 reais: pagina 1 encerra no grafico/fatores; pagina 2 inicia plano operacional e primeiras fases; pagina 3 concentra fases restantes, cenario ajustado e detalhes, evitando cortes de texto.
 - Geracao de PDF sem fallback por impressao do navegador, para evitar arquivos sem template, cabecalho/rodape do navegador e URL da pagina.
 - Submit da analise tratado de forma defensiva para garantir que os fatores sejam coletados sempre a partir do formulario `riskForm`.
 - Todas as variaveis do formulario de analise impactam a regressao:
