@@ -36,6 +36,7 @@ Estado ancorado em `PROJECT_ANCHOR.md`.
 - Layout institucional do PDF reaplicado conforme documento de referencia: barra azul lateral, canto superior azul, logo em destaque, titulo "Analise de Risco", linha laranja, jogo em italico, local/data em texto discreto, conteudo fluido e rodape alinhado.
 - Ajuste fino de simetria do PDF: margens A4 refinadas, cabecalho proporcional, area de conteudo alinhada, medidor/barras com colunas estaveis e rodape com espacamento regular.
 - Rodape do PDF corrigido com linha laranja fixa, blocos laterais alinhados e bloco institucional central padronizado no fim de cada pagina A4.
+- Rodape do PDF mantido somente na ultima pagina do documento para liberar espaco nas paginas anteriores.
 - Conteudo das paginas do PDF limitado a area util acima do rodape; detalhes tecnicos movidos para pagina propria para evitar sobreposicao com rodape.
 - Paginacao do PDF reconfigurada com paginas A4 reais: pagina 1 encerra no grafico/fatores; pagina 2 inicia plano operacional e primeiras fases; pagina 3 concentra fases restantes, cenario ajustado e detalhes, evitando cortes de texto.
 - Geracao de PDF sem fallback por impressao do navegador, para evitar arquivos sem template, cabecalho/rodape do navegador e URL da pagina.
