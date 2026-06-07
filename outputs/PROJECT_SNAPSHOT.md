@@ -32,6 +32,7 @@ Estado ancorado em `PROJECT_ANCHOR.md`.
 - Layout do PDF alinhado para proporcao A4, com largura fixa de captura, margens internas reduzidas e blocos de analise redimensionados para melhor encaixe na pagina.
 - Exportacao PDF refinada para computador: captura realizada manualmente com `html2canvas` e montagem do PDF com `jsPDF`, evitando o clone automatico do `html2pdf` que podia gerar paginas em branco.
 - Layout institucional do PDF reaplicado conforme documento de referencia: barra azul lateral, canto superior azul, logo em destaque, titulo "Analise de Risco", linha laranja, jogo em italico, local/data em texto discreto, conteudo fluido e rodape alinhado.
+- Ajuste fino de simetria do PDF: margens A4 refinadas, cabecalho proporcional, area de conteudo alinhada, medidor/barras com colunas estaveis e rodape com espacamento regular.
 - Geracao de PDF sem fallback por impressao do navegador, para evitar arquivos sem template, cabecalho/rodape do navegador e URL da pagina.
 - Submit da analise tratado de forma defensiva para garantir que os fatores sejam coletados sempre a partir do formulario `riskForm`.
 - Todas as variaveis do formulario de analise impactam a regressao:
