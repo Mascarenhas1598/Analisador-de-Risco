@@ -1452,11 +1452,15 @@
 
       const relatorio = await montarRelatorioAnalise();
       const host = document.createElement('div');
+      const scrollXAtual = window.scrollX;
+      const scrollYAtual = window.scrollY;
 
       host.className = 'pdf-export-host';
       host.setAttribute('aria-hidden', 'true');
       host.innerHTML = `<style>${relatorio.styles}</style>${relatorio.bodyHTML}`;
+      document.body.classList.add('pdf-exporting');
       document.body.appendChild(host);
+      window.scrollTo(0, 0);
 
       try {
         const pagina = host.querySelector('.report-page');
@@ -1472,6 +1476,7 @@
               scale: 2,
               useCORS: true,
               backgroundColor: '#ffffff',
+              width: 794,
               scrollX: 0,
               scrollY: 0,
               windowWidth: 794,
@@ -1494,6 +1499,8 @@
         mostrarNotificacao('Nao foi possivel gerar o PDF automaticamente.', 'erro');
       } finally {
         host.remove();
+        document.body.classList.remove('pdf-exporting');
+        window.scrollTo(scrollXAtual, scrollYAtual);
       }
     }
 
@@ -1532,16 +1539,24 @@
       const timestamp = new Date().toISOString().slice(0, 19).replaceAll(':', '-');
       const reportStyles = `
         .pdf-export-host {
-          position: fixed;
-          top: 0;
-          left: 0;
+          display: block;
           width: 794px;
-          min-height: 100vh;
+          min-height: 1123px;
+          margin: 0 auto;
           max-height: none;
           overflow: visible;
           background: #fff;
           pointer-events: none;
-          z-index: 2147483647;
+        }
+
+        body.pdf-exporting {
+          margin: 0 !important;
+          background: #fff !important;
+          overflow: visible !important;
+        }
+
+        body.pdf-exporting > :not(.pdf-export-host) {
+          display: none !important;
         }
 
         body.report-body {
@@ -1566,6 +1581,17 @@
           width: 794px;
           margin: 0;
           box-shadow: none;
+        }
+
+        .pdf-export-host *,
+        .pdf-export-host *::before,
+        .pdf-export-host *::after {
+          box-sizing: border-box;
+        }
+
+        .pdf-export-host .report-content,
+        .pdf-export-host .report-content * {
+          max-width: 100%;
         }
 
         .report-page::before {
@@ -1662,6 +1688,7 @@
           border: 0;
           background: transparent;
           box-shadow: none;
+          overflow: visible;
         }
 
         .report-content h3 {
@@ -1708,6 +1735,10 @@
           gap: 8px;
         }
 
+        .report-content .bar-row > * {
+          min-width: 0;
+        }
+
         .report-content .mitigation-panel,
         .report-content .scenario-box,
         .report-content .phase-card {
@@ -1744,8 +1775,11 @@
         .report-content .chart-panel,
         .report-content .contribution-panel,
         .report-content .mitigation-panel,
-        .report-content .details-text {
+        .report-content .details-text,
+        .report-content .phase-card,
+        .report-content .scenario-box {
           break-inside: avoid;
+          page-break-inside: avoid;
         }
 
         .report-footer {
