@@ -1637,22 +1637,29 @@
           throw new Error('Canvas do relatorio sem dimensoes');
         }
 
-        const imageData = canvas.toDataURL('image/jpeg', 0.96);
         const pdf = new window.jspdf.jsPDF('p', 'mm', 'a4');
         const pageWidth = 210;
         const pageHeight = 297;
-        const imageHeight = (canvas.height * pageWidth) / canvas.width;
-        let remainingHeight = imageHeight;
-        let position = 0;
+        const chartSection = pagina.querySelector('.chart-section');
+        const firstCutPx = chartSection
+          ? Math.ceil((chartSection.offsetTop + chartSection.offsetHeight + 12) * (canvas.width / pagina.scrollWidth))
+          : Math.floor(canvas.width * (pageHeight / pageWidth));
+        const maxPageSlicePx = Math.floor(canvas.width * (pageHeight / pageWidth));
+        let startPx = 0;
+        let sliceIndex = 0;
 
-        pdf.addImage(imageData, 'JPEG', 0, position, pageWidth, imageHeight);
-        remainingHeight -= pageHeight;
+        while (startPx < canvas.height) {
+          const desiredHeight = sliceIndex === 0 ? firstCutPx : maxPageSlicePx;
+          const sliceHeight = Math.min(desiredHeight, canvas.height - startPx);
+          const sliceCanvas = recortarCanvas(canvas, startPx, sliceHeight);
+          const imageData = sliceCanvas.toDataURL('image/jpeg', 0.96);
+          const imageHeightMm = (sliceHeight * pageWidth) / canvas.width;
 
-        while (remainingHeight > 0) {
-          position = remainingHeight - imageHeight;
-          pdf.addPage();
-          pdf.addImage(imageData, 'JPEG', 0, position, pageWidth, imageHeight);
-          remainingHeight -= pageHeight;
+          if (sliceIndex > 0) pdf.addPage();
+          pdf.addImage(imageData, 'JPEG', 0, 0, pageWidth, imageHeightMm);
+
+          startPx += sliceHeight;
+          sliceIndex += 1;
         }
 
         pdf.save(relatorio.fileName);
@@ -1667,6 +1674,19 @@
 
     async function baixarRelatorioAnalise() {
       await gerarPDFAnalise();
+    }
+
+    function recortarCanvas(canvas, y, height) {
+      const slice = document.createElement('canvas');
+      slice.width = canvas.width;
+      slice.height = height;
+
+      const context = slice.getContext('2d');
+      context.fillStyle = '#ffffff';
+      context.fillRect(0, 0, slice.width, slice.height);
+      context.drawImage(canvas, 0, y, canvas.width, height, 0, 0, canvas.width, height);
+
+      return slice;
     }
 
     function gerarPlanoOperacional(data, modelo, factors, cenarioMitigado) {
@@ -2032,6 +2052,8 @@
           border: 0;
           border-radius: 0;
           background: #ffffff;
+          break-after: page;
+          page-break-after: always;
         }
 
         .report-content .top-list {
