@@ -488,6 +488,102 @@
       margin-top: 8px;
     }
 
+    .operational-plan {
+      margin-top: 20px;
+      padding: 16px;
+      border: 1px solid #dbeafe;
+      border-radius: 8px;
+      background: #ffffff;
+    }
+
+    .operational-plan h3 {
+      margin: 0 0 12px;
+      color: var(--brand-blue-dark);
+    }
+
+    .plan-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .plan-metric {
+      padding: 10px;
+      border-radius: 6px;
+      background: #f8fbff;
+      color: #374151;
+      font-size: 0.86rem;
+    }
+
+    .plan-metric strong {
+      display: block;
+      margin-top: 4px;
+      color: #111827;
+      font-size: 1rem;
+    }
+
+    .plan-columns {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .plan-list {
+      margin: 8px 0 0;
+      padding-left: 20px;
+      color: #374151;
+    }
+
+    .history-panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .analysis-history {
+      display: grid;
+      gap: 10px;
+    }
+
+    .analysis-history-card {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 12px;
+      align-items: center;
+      padding: 12px;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      background: #ffffff;
+    }
+
+    .analysis-history-card h3 {
+      margin: 0 0 4px;
+      font-size: 1rem;
+    }
+
+    .analysis-history-card p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.88rem;
+      line-height: 1.35;
+    }
+
+    .history-score {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 46px;
+      padding: 6px 8px;
+      border-radius: 999px;
+      color: #ffffff;
+      background: var(--risk-color, #16a34a);
+      font-weight: 800;
+      font-size: 0.9rem;
+    }
+
     .toast {
       position: fixed;
       right: 18px;
@@ -570,6 +666,17 @@
 
       .scenario-grid {
         grid-template-columns: 1fr;
+      }
+
+      .plan-grid,
+      .plan-columns,
+      .analysis-history-card {
+        grid-template-columns: 1fr;
+      }
+
+      .history-panel-header {
+        align-items: stretch;
+        flex-direction: column;
       }
     }
 
@@ -761,6 +868,17 @@
         </p>
         <div id="resultado" class="result hidden"></div>
       </section>
+
+      <section class="panel section" aria-labelledby="historicoTitulo">
+        <div class="history-panel-header">
+          <div>
+            <h2 id="historicoTitulo">Análises anteriores</h2>
+            <p class="muted">Histórico salvo localmente neste navegador.</p>
+          </div>
+          <button class="button button-secondary button-small" type="button" onclick="limparHistoricoAnalises()">Limpar</button>
+        </div>
+        <div id="historicoAnalises" class="analysis-history"></div>
+      </section>
     </section>
   </main>
 
@@ -810,6 +928,7 @@
     }
 
     const analyzer = new RiskAnalyzer();
+    const ANALYSIS_HISTORY_KEY = 'nmRiskAnalysisHistory';
     const HISTORICO_CACHE = new Map();
     let historicoTimer = null;
     const RIVALIDADES_CONHECIDAS = new Map([
@@ -1361,7 +1480,8 @@
       return value.charAt(0).toUpperCase() + value.slice(1).replaceAll('-', ' ');
     }
 
-    function renderResultado(data) {
+    function renderResultado(data, options = {}) {
+      const persistir = options.persistir !== false;
       const resultado = document.getElementById('resultado');
       resultado.classList.remove('hidden');
       const modelo = calcularRegressaoLogistica(data.factors);
@@ -1370,6 +1490,7 @@
       const acoesMitigacao = gerarAcoesMitigacao(data.risco, modelo, data.factors);
       const cenarioMitigado = calcularCenarioMitigado(data.factors);
       const fatoresBaixos = montarFatoresBaixaPressao(modelo);
+      const planoOperacional = gerarPlanoOperacional(data, modelo, data.factors, cenarioMitigado);
       const linhas = [
         `Pontuacao de risco: ${data.risco}/100`,
         `Resumo: ${data.resumo}`,
@@ -1411,6 +1532,38 @@
           </div>
         </div>
 
+        <div class="operational-plan">
+          <h3>Plano operacional recomendado</h3>
+          <div class="plan-grid">
+            <div class="plan-metric">
+              Decisão operacional
+              <strong>${escaparHTML(planoOperacional.decisao)}</strong>
+            </div>
+            <div class="plan-metric">
+              Efetivo recomendado
+              <strong>${planoOperacional.efetivoRecomendado.toLocaleString('pt-BR')}</strong>
+            </div>
+            <div class="plan-metric">
+              Nível de resposta
+              <strong>${escaparHTML(planoOperacional.nivelResposta)}</strong>
+            </div>
+          </div>
+          <div class="plan-columns">
+            <div>
+              <h3>Pontos críticos</h3>
+              <ul class="plan-list">
+                ${planoOperacional.pontosCriticos.map((item) => `<li>${escaparHTML(item)}</li>`).join('')}
+              </ul>
+            </div>
+            <div>
+              <h3>Ações obrigatórias</h3>
+              <ul class="plan-list">
+                ${planoOperacional.acoesObrigatorias.map((item) => `<li>${escaparHTML(item)}</li>`).join('')}
+              </ul>
+            </div>
+          </div>
+        </div>
+
         <div class="mitigation-panel">
           <h3>Ações recomendadas para mitigação por fase</h3>
           <div class="phase-list">
@@ -1443,6 +1596,10 @@
           <button class="button" type="button" onclick="gerarPDFAnalise()">Baixar PDF</button>
         </div>
       `;
+
+      if (persistir) {
+        salvarAnaliseHistorico(data);
+      }
     }
 
     async function gerarPDFAnalise() {
@@ -1510,6 +1667,126 @@
 
     async function baixarRelatorioAnalise() {
       await gerarPDFAnalise();
+    }
+
+    function gerarPlanoOperacional(data, modelo, factors, cenarioMitigado) {
+      const cobertura = calcularCoberturaSegurancaPrivada(factors.publicoEstimado, factors.segurancasPrivados);
+      const efetivoBase = cobertura.necessarios;
+      const reforco = data.risco >= 70 ? 1.2 : data.risco >= 50 ? 1.1 : 1;
+      const efetivoRecomendado = Math.ceil(efetivoBase * reforco);
+      const variaveis = modelo.variaveis;
+      const pontosCriticos = removerTextosDuplicados([
+        variaveis.publico >= 0.6 ? 'Grande concentração de público e pressão sobre acessos, filtros e circulação interna.' : 'Público dentro de faixa operacional controlável.',
+        variaveis.historicoEquipes >= 0.5 || variaveis.rivalidadeEquipes >= 0.5 ? 'Histórico/rivalidade requer segregação de fluxos e vigilância ampliada.' : null,
+        variaveis.posicaoTabela >= 0.7 ? 'Impacto competitivo elevado pode intensificar reação a placar, arbitragem e resultado.' : null,
+        variaveis.meteorologia >= 0.6 ? 'Meteorologia exige contingência para filas, áreas abertas, drenagem e comunicação.' : null,
+        variaveis.riscoSeguranca > 0.05 ? `Cobertura privada abaixo da referência 1/100; efetivo mínimo calculado: ${efetivoBase.toLocaleString('pt-BR')}.` : 'Cobertura de segurança privada compatível com a referência 1/100.',
+        variaveis.conflitoTorcidaClube >= 0.5 ? 'Conflito torcida x clube deve ser acompanhado por mediação e resposta rápida.' : null
+      ]);
+
+      const acoesObrigatorias = removerTextosDuplicados([
+        `Planejar efetivo privado recomendado de ${efetivoRecomendado.toLocaleString('pt-BR')} profissionais para o cenário analisado.`,
+        'Validar sala de controle, comunicação rádio, rotas de emergência, atendimento médico e responsáveis por decisão.',
+        'Formalizar matriz de responsabilidades por fase: montagem, pré-entrada, entrada, jogo, evacuação e fechamento.',
+        data.risco >= 70 ? 'Acionar reunião de coordenação com segurança pública, operação do estádio, clube mandante e supervisão privada.' : null,
+        cenarioMitigado.reducao > 0 ? `Aplicar medidas mitigadoras com potencial de redução de ${cenarioMitigado.reducao} ponto(s) no risco.` : 'Manter monitoramento preventivo e registro operacional para calibração futura.'
+      ]);
+
+      return {
+        decisao: data.risco >= 75 ? 'Operar com reforço e validação superior' : data.risco >= 50 ? 'Operar com plano reforçado' : 'Operar com plano padrão monitorado',
+        nivelResposta: data.risco >= 75 ? 'Crítico' : data.risco >= 50 ? 'Reforçado' : 'Preventivo',
+        efetivoRecomendado,
+        pontosCriticos,
+        acoesObrigatorias
+      };
+    }
+
+    function salvarAnaliseHistorico(data) {
+      const historico = obterHistoricoAnalises();
+      const registro = {
+        id: `analise-${Date.now()}`,
+        criadoEm: new Date().toISOString(),
+        risco: data.risco,
+        resumo: data.resumo,
+        fontes: data.fontes || [],
+        detalhes: data.detalhes || [],
+        factors: data.factors
+      };
+
+      const atualizado = [registro, ...historico].slice(0, 20);
+      localStorage.setItem(ANALYSIS_HISTORY_KEY, JSON.stringify(atualizado));
+      renderHistoricoAnalises();
+    }
+
+    function obterHistoricoAnalises() {
+      try {
+        return JSON.parse(localStorage.getItem(ANALYSIS_HISTORY_KEY) || '[]');
+      } catch (error) {
+        console.warn('Historico local invalido:', error);
+        return [];
+      }
+    }
+
+    function renderHistoricoAnalises() {
+      const container = document.getElementById('historicoAnalises');
+      if (!container) return;
+
+      const historico = obterHistoricoAnalises();
+      if (!historico.length) {
+        container.innerHTML = '<p class="muted">Nenhuma análise salva ainda.</p>';
+        return;
+      }
+
+      container.innerHTML = historico.map((item) => {
+        const jogo = item.factors?.equipesEnvolvidas || 'Jogo não informado';
+        const local = item.factors?.localEvento || 'Local não informado';
+        const data = formatarDataRelatorio(item.factors?.dataJogo || '');
+        const criado = new Date(item.criadoEm).toLocaleString('pt-BR');
+        const cor = corPorRisco(item.risco);
+
+        return `
+          <article class="analysis-history-card">
+            <div>
+              <h3>${escaparHTML(jogo)}</h3>
+              <p>${escaparHTML(local)} | Data: ${escaparHTML(data)} | Gerada em ${escaparHTML(criado)}</p>
+            </div>
+            <div class="history-tools">
+              <span class="history-score" style="--risk-color: ${cor};">${item.risco}</span>
+              <button class="button button-secondary button-small" type="button" onclick="carregarAnaliseHistorico('${escaparAtributo(item.id)}')">Reabrir</button>
+            </div>
+          </article>
+        `;
+      }).join('');
+    }
+
+    function carregarAnaliseHistorico(id) {
+      const item = obterHistoricoAnalises().find((registro) => registro.id === id);
+      if (!item) {
+        mostrarNotificacao('Análise não encontrada no histórico.', 'erro');
+        return;
+      }
+
+      preencherFormularioComFatores(item.factors);
+      renderResultado(item, { persistir: false });
+      updateAPIStatus('Análise reaberta do histórico', 'green');
+      document.getElementById('resultado').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    function preencherFormularioComFatores(factors) {
+      Object.entries(factors || {}).forEach(([key, value]) => {
+        const input = document.getElementById(key);
+        if (!input || input.type === 'hidden') return;
+        input.value = value;
+      });
+      if (factors?.historicoEquipesScore !== undefined) {
+        document.getElementById('historicoEquipesScore').value = factors.historicoEquipesScore;
+      }
+    }
+
+    function limparHistoricoAnalises() {
+      localStorage.removeItem(ANALYSIS_HISTORY_KEY);
+      renderHistoricoAnalises();
+      mostrarNotificacao('Histórico local limpo.', 'sucesso');
     }
 
     async function aguardarRenderizacaoPDF(container) {
@@ -2239,6 +2516,7 @@
       document.getElementById('logoutButton').addEventListener('click', logout);
       document.getElementById('historySearchButton').addEventListener('click', pesquisarHistoricoEquipes);
       document.getElementById('equipesEnvolvidas').addEventListener('input', agendarPesquisaHistorico);
+      renderHistoricoAnalises();
     });
   </script>
 </body>

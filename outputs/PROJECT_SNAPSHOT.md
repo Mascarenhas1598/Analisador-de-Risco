@@ -22,6 +22,8 @@ Estado ancorado em `PROJECT_ANCHOR.md`.
 - Calculo de risco por regressao logistica.
 - Resultado visual com medidor de risco, barras por variavel e top 3 fatores de maior contribuicao.
 - Resumo de acoes recomendadas para mitigacao gerado apos a analise, organizado por fase do espetaculo esportivo.
+- Plano operacional recomendado incluido no resultado e no PDF, com decisao operacional, nivel de resposta, efetivo recomendado, pontos criticos e acoes obrigatorias.
+- Historico local de analises anteriores incluido na interface, com armazenamento no navegador, reabertura de analises e limpeza do historico.
 - Fases contempladas: montagem, pre-entrada, entrada, jogo, evacuacao e fechamento.
 - Cenario ajustado apos mitigacao, mantendo fatores nao controlaveis e simulando reducao de risco em variaveis acionaveis.
 - Indicacao de fatores de baixa pressao, como rivalidade zerada, conflito zerado ou cobertura de seguranca adequada.
