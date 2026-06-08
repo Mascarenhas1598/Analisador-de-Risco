@@ -20,6 +20,8 @@ Estado ancorado em `PROJECT_ANCHOR.md`.
 - Simulacao de historico de equipes com scores locais.
 - Preparacao para Google Custom Search via `GOOGLE_API_KEY` e `GOOGLE_CSE_ID`.
 - Calculo de risco por regressao logistica.
+- Modelo especifico Ba-Vi calibrado com base historica real `outputs/data/NM-BAxVI.xlsx`, aplicavel somente a Bahia x Vitoria/Vitoria x Bahia em Arena Fonte Nova/Fonte Nova ou Barradao.
+- Modelo geral preservado para todos os demais jogos sem base historica especifica.
 - Resultado visual com medidor de risco, barras por variavel e top 3 fatores de maior contribuicao.
 - Resumo de acoes recomendadas para mitigacao gerado apos a analise, organizado por fase do espetaculo esportivo.
 - Plano operacional recomendado incluido no resultado e no PDF, com decisao operacional, nivel de resposta, efetivo recomendado, pontos criticos e acoes obrigatorias.

@@ -946,6 +946,8 @@
       ['santa cruz|sport', { score: 0.74, nome: 'Clássico das Multidões' }]
     ]);
     const LOGISTIC_MODEL = {
+      nome: 'Modelo geral',
+      escopo: 'Aplicavel a jogos sem base historica propria calibrada.',
       intercepto: -2.25,
       coeficientes: {
         publico: 1.1,
@@ -959,6 +961,28 @@
         riscoSeguranca: 0.8,
         complexidadeLocal: 0.55,
         sinaisObservacoes: 0.65
+      }
+    };
+
+    const BA_VI_HISTORICAL_MODEL = {
+      nome: 'Modelo Ba-Vi calibrado',
+      escopo: 'Aplicavel somente a jogos Bahia x Vitoria ou Vitoria x Bahia em Salvador, com foco em Arena Fonte Nova e Barradao.',
+      fonte: 'NM - BAxVI.xlsx',
+      jogos: 38,
+      riscoAlto: 15,
+      intercepto: -1.805,
+      coeficientes: {
+        publico: 0.18,
+        historicoEquipes: 0.35,
+        rivalidadeEquipes: 0.42,
+        posicaoTabela: 0.12,
+        tipoCampeonato: 0.21,
+        diaSemana: 0.22,
+        meteorologia: 0.08,
+        conflitoTorcidaClube: 1.2,
+        riscoSeguranca: 1.01,
+        complexidadeLocal: 0.1,
+        sinaisObservacoes: 1.2
       }
     };
 
@@ -1238,6 +1262,7 @@
 
     function criarResultadoLocal(factors) {
       const risco = calcularPontuacaoRisco(factors);
+      const modelo = calcularRegressaoLogistica(factors);
       let nivel = 'baixo';
 
       if (risco >= 70) {
@@ -1249,7 +1274,7 @@
       return {
         risco,
         fontes: [],
-        resumo: `Analise local para ${factors.equipesEnvolvidas} em ${factors.localEvento}. Risco ${nivel}, estimado por regressao logistica com publico, historico pesquisado, rivalidade, tabela, campeonato, dia, meteorologia, conflitos, seguranca privada, complexidade do local e sinais nas observacoes.`,
+        resumo: `Analise local para ${factors.equipesEnvolvidas} em ${factors.localEvento}. Risco ${nivel}, estimado por ${modelo.modelo.nome.toLowerCase()} com publico, historico pesquisado, rivalidade, tabela, campeonato, dia, meteorologia, conflitos, seguranca privada, complexidade do local e sinais nas observacoes.`,
         detalhes: gerarDetalhesAnalise(factors)
       };
     }
@@ -1336,7 +1361,8 @@
 
     function calcularRegressaoLogistica(factors) {
       const variaveis = montarVariaveisLogisticas(factors);
-      const z = LOGISTIC_MODEL.intercepto + Object.entries(LOGISTIC_MODEL.coeficientes).reduce((total, [nome, coeficiente]) => {
+      const modeloSelecionado = selecionarModeloLogistico(factors);
+      const z = modeloSelecionado.intercepto + Object.entries(modeloSelecionado.coeficientes).reduce((total, [nome, coeficiente]) => {
         return total + coeficiente * (variaveis[nome] || 0);
       }, 0);
       const probabilidade = 1 / (1 + Math.exp(-z));
@@ -1344,8 +1370,22 @@
       return {
         z,
         probabilidade,
-        variaveis
+        variaveis,
+        modelo: modeloSelecionado
       };
+    }
+
+    function selecionarModeloLogistico(factors) {
+      return deveUsarModeloBaVi(factors) ? BA_VI_HISTORICAL_MODEL : LOGISTIC_MODEL;
+    }
+
+    function deveUsarModeloBaVi(factors) {
+      const equipes = separarEquipes(factors.equipesEnvolvidas || '').map(normalizarNomeEquipe);
+      const envolveBavi = equipes.includes('bahia') && equipes.includes('vitoria');
+      const local = normalizarTexto(factors.localEvento || '');
+      const localCalibrado = local.includes('arena') || local.includes('fonte nova') || local.includes('barradao') || local.includes('barradao');
+
+      return envolveBavi && localCalibrado;
     }
 
     function montarVariaveisLogisticas(factors) {
@@ -1454,6 +1494,9 @@
 
       return [
         'Metodologia: regressão logística',
+        `Modelo aplicado: ${modelo.modelo.nome}`,
+        `Escopo do modelo: ${modelo.modelo.escopo}`,
+        modelo.modelo.fonte ? `Base histórica: ${modelo.modelo.fonte} (${modelo.modelo.jogos} jogos filtrados; ${modelo.modelo.riscoAlto} classificados como risco alto).` : 'Base histórica específica: não aplicada ao adversário/local informado.',
         'Equação: P(risco) = 1 / (1 + exp(-z))',
         `Logit z: ${modelo.z.toFixed(3)}`,
         `Probabilidade estimada: ${(modelo.probabilidade * 100).toFixed(1)}%`,
@@ -1515,6 +1558,7 @@
           <div>
             <h3>Risco ${escaparHTML(rotuloRisco(data.risco))}</h3>
             <p class="muted">${escaparHTML(data.resumo)}</p>
+            <p class="mitigation-note"><strong>Modelo aplicado:</strong> ${escaparHTML(modelo.modelo.nome)}. ${escaparHTML(modelo.modelo.escopo)}</p>
             <span class="risk-label">${escaparHTML(rotuloRisco(data.risco))}</span>
           </div>
         </div>
@@ -2515,7 +2559,7 @@
         sinaisObservacoes: 'Observações'
       };
 
-      return Object.entries(LOGISTIC_MODEL.coeficientes)
+      return Object.entries(modelo.modelo.coeficientes)
         .map(([key, coeficiente]) => {
           const valor = modelo.variaveis[key] || 0;
           const contribuicao = coeficiente * valor;
