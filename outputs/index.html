@@ -789,6 +789,11 @@
           <div class="field">
             <label for="publicoEstimado">Público estimado</label>
             <input id="publicoEstimado" name="publicoEstimado" type="number" min="0" step="1" required>
+            <input id="publicoEstimadoFonte" name="publicoEstimadoFonte" type="hidden" value="">
+            <div class="history-tools">
+              <p id="publicoEstimadoStatus" class="muted">Pode ser estimado automaticamente pelo jogo, local e contexto.</p>
+              <button id="publicEstimateButton" class="button button-secondary button-small" type="button">Estimar público</button>
+            </div>
           </div>
 
           <div class="field">
@@ -852,6 +857,11 @@
           <div class="field">
             <label for="segurancasPrivados">Seguranças privados empregados</label>
             <input id="segurancasPrivados" name="segurancasPrivados" type="number" min="0" step="1" required>
+            <input id="segurancasRecomendados" name="segurancasRecomendados" type="hidden" value="">
+            <div class="history-tools">
+              <p id="segurancasStatus" class="muted">Referência operacional: 1 segurança para cada 100 torcedores.</p>
+              <button id="securityEstimateButton" class="button button-secondary button-small" type="button">Usar referência 1/100</button>
+            </div>
           </div>
 
           <div class="field field-full">
@@ -1180,11 +1190,178 @@
         `<br>Score histórico: ${(data.score * 100).toFixed(0)}%`,
         renderizarLinksHistorico(data.links)
       ].join('');
+      estimarPublicoAutomatico({ somenteSeVazio: true, origem: 'historico' });
     }
 
     function limparHistoricoEquipes() {
       document.getElementById('historicoEquipesScore').value = '0';
       document.getElementById('historicoEquipesResultado').classList.add('hidden');
+    }
+
+    function estimarPublicoAutomatico({ somenteSeVazio = false, origem = 'manual' } = {}) {
+      const input = document.getElementById('publicoEstimado');
+      const status = document.getElementById('publicoEstimadoStatus');
+
+      if (somenteSeVazio && Number(input.value || 0) > 0) {
+        atualizarStatusSeguranca();
+        return null;
+      }
+
+      const contexto = lerContextoEstimativaPublico();
+      const estimativa = calcularEstimativaPublico(contexto);
+
+      if (!estimativa.valor) {
+        status.textContent = 'Informe equipes e local para estimar o público automaticamente.';
+        atualizarStatusSeguranca();
+        return null;
+      }
+
+      input.value = String(estimativa.valor);
+      document.getElementById('publicoEstimadoFonte').value = estimativa.resumo;
+      status.textContent = estimativa.resumo;
+      atualizarStatusSeguranca({ preencherSeVazio: origem !== 'digitacao' });
+
+      if (origem === 'manual') {
+        mostrarNotificacao('Público estimado automaticamente.', 'sucesso');
+      }
+
+      return estimativa;
+    }
+
+    function lerContextoEstimativaPublico() {
+      return {
+        equipes: document.getElementById('equipesEnvolvidas').value,
+        localEvento: document.getElementById('localEvento').value,
+        tipoCampeonato: document.getElementById('tipoCampeonato').value,
+        diaSemana: document.getElementById('diaSemana').value,
+        meteorologia: document.getElementById('meteorologia').value,
+        historicoEquipesScore: Number(document.getElementById('historicoEquipesScore').value || 0),
+        rivalidadeEquipes: Number(document.getElementById('rivalidadeEquipes').value || 0),
+        posicaoTabela: Number(document.getElementById('posicaoTabela').value || 0)
+      };
+    }
+
+    function calcularEstimativaPublico(contexto) {
+      const capacidade = calcularCapacidadeLocal(contexto.localEvento);
+      const equipes = separarEquipes(contexto.equipes || '').map(normalizarNomeEquipe);
+
+      if (!capacidade.valor || equipes.length < 2) {
+        return { valor: 0, resumo: '' };
+      }
+
+      const envolveBahia = equipes.includes('bahia');
+      const envolveVitoria = equipes.includes('vitoria');
+      const bavi = envolveBahia && envolveVitoria;
+      const historico = limitarNumero(contexto.historicoEquipesScore || 0, 0, 1);
+      const rivalidade = limitarNumero(contexto.rivalidadeEquipes || 0, 0, 1);
+      const tabela = limitarNumero(contexto.posicaoTabela || 0, 0, 1);
+      let ocupacao = 0.42;
+
+      if (envolveBahia) ocupacao = 0.58;
+      if (bavi) ocupacao = 0.9;
+      if (historico >= 0.7 || rivalidade >= 0.7) ocupacao = Math.max(ocupacao, 0.82);
+      if (historico >= 0.45 || rivalidade >= 0.45) ocupacao = Math.max(ocupacao, 0.66);
+
+      ocupacao += pesoPorValor(contexto.tipoCampeonato, {
+        amistoso: -0.18,
+        regional: 0.02,
+        estadual: 0.05,
+        nacional: 0.08,
+        continental: 0.12,
+        final: 0.2
+      });
+      ocupacao += pesoPorValor(contexto.diaSemana, {
+        segunda: -0.08,
+        terca: -0.08,
+        quarta: -0.04,
+        quinta: -0.03,
+        sexta: 0.03,
+        sabado: 0.06,
+        domingo: 0.05
+      });
+      ocupacao += tabela * 0.1;
+      ocupacao += Math.max(historico, rivalidade) * 0.08;
+      ocupacao += pesoPorValor(contexto.meteorologia, {
+        favoravel: 0.02,
+        instavel: -0.03,
+        chuva: -0.07,
+        severa: -0.12
+      });
+
+      const ocupacaoFinal = limitarNumero(ocupacao, 0.22, 0.98);
+      const valor = arredondarParaBase(capacidade.valor * ocupacaoFinal, 500);
+      const resumo = `Estimativa automática: ${valor.toLocaleString('pt-BR')} torcedores (${Math.round(ocupacaoFinal * 100)}% da capacidade de ${capacidade.nome}).`;
+
+      return { valor, resumo, capacidade: capacidade.valor, ocupacao: ocupacaoFinal };
+    }
+
+    function calcularCapacidadeLocal(localEvento) {
+      const texto = normalizarTexto(localEvento || '');
+
+      if (!texto) return { valor: 0, nome: 'local não informado' };
+      if (texto.includes('barradao') || texto.includes('manoel barradas')) {
+        return { valor: 30336, nome: 'Barradão' };
+      }
+      if (texto.includes('pituacu')) {
+        return { valor: 32157, nome: 'Pituaçu' };
+      }
+      if (texto.includes('arena') || texto.includes('fonte nova')) {
+        return { valor: 47907, nome: 'Arena Fonte Nova' };
+      }
+
+      return { valor: 40000, nome: 'local informado' };
+    }
+
+    function arredondarParaBase(value, base) {
+      return Math.max(Math.round(value / base) * base, base);
+    }
+
+    function atualizarStatusSeguranca({ preencherSeVazio = false } = {}) {
+      const publico = Number(document.getElementById('publicoEstimado').value || 0);
+      const inputSegurancas = document.getElementById('segurancasPrivados');
+      const status = document.getElementById('segurancasStatus');
+      const hiddenRecomendado = document.getElementById('segurancasRecomendados');
+      const cobertura = calcularCoberturaSegurancaPrivada(publico, Number(inputSegurancas.value || 0));
+      const recomendado = cobertura.necessarios;
+
+      hiddenRecomendado.value = String(recomendado);
+
+      if (!publico) {
+        status.textContent = 'Informe ou estime o público para calcular a referência 1/100.';
+        return;
+      }
+
+      if (preencherSeVazio && !Number(inputSegurancas.value || 0)) {
+        inputSegurancas.value = String(recomendado);
+      }
+
+      const empregados = Number(inputSegurancas.value || 0);
+      const deficit = Math.max(recomendado - empregados, 0);
+      const sobra = Math.max(empregados - recomendado, 0);
+
+      if (deficit > 0) {
+        status.textContent = `Referência 1/100: ${recomendado.toLocaleString('pt-BR')} seguranças. Déficit atual: ${deficit.toLocaleString('pt-BR')}.`;
+      } else {
+        status.textContent = `Referência 1/100 atendida: ${recomendado.toLocaleString('pt-BR')} necessários${sobra ? `, sobra de ${sobra.toLocaleString('pt-BR')}` : ''}.`;
+      }
+    }
+
+    function aplicarReferenciaSegurancaPrivada() {
+      const publico = Number(document.getElementById('publicoEstimado').value || 0);
+
+      if (!publico) {
+        const estimativa = estimarPublicoAutomatico({ somenteSeVazio: true });
+        if (!estimativa) {
+          mostrarNotificacao('Informe equipes e local antes de calcular a referência 1/100.', 'erro');
+          return;
+        }
+      }
+
+      const publicoAtual = Number(document.getElementById('publicoEstimado').value || 0);
+      const cobertura = calcularCoberturaSegurancaPrivada(publicoAtual, 0);
+      document.getElementById('segurancasPrivados').value = String(cobertura.necessarios);
+      atualizarStatusSeguranca();
+      mostrarNotificacao('Efetivo privado ajustado pela referência 1/100.', 'sucesso');
     }
 
     async function atualizarPrevisaoMeteorologica({ silencioso = false } = {}) {
@@ -1217,6 +1394,7 @@
         document.getElementById('meteorologia').value = data.categoria;
         document.getElementById('meteorologiaResumo').value = data.resumo || '';
         status.textContent = `${data.resumo} Fonte: ${data.origem}, local: ${data.local}.`;
+        estimarPublicoAutomatico({ somenteSeVazio: true, origem: 'meteorologia' });
 
         if (!silencioso) {
           mostrarNotificacao('Meteorologia preenchida automaticamente.', 'sucesso');
@@ -1351,6 +1529,12 @@
         await atualizarPrevisaoMeteorologica({ silencioso: true });
       }
 
+      if (!document.getElementById('publicoEstimado').value) {
+        estimarPublicoAutomatico({ somenteSeVazio: true });
+      }
+
+      atualizarStatusSeguranca({ preencherSeVazio: true });
+
       if (!validarFormulario(form)) {
         mostrarNotificacao('Revise os campos obrigatorios.', 'erro');
         return;
@@ -1412,7 +1596,8 @@
         'rivalidadeEquipes',
         'posicaoTabela',
         'conflitoTorcidaClube',
-        'segurancasPrivados'
+        'segurancasPrivados',
+        'segurancasRecomendados'
       ].forEach((field) => {
         factors[field] = Number(factors[field] || 0);
       });
@@ -1557,6 +1742,8 @@
       const modelo = calcularRegressaoLogistica(factors);
       const variaveis = modelo.variaveis;
       const coberturaPrivada = calcularCoberturaSegurancaPrivada(factors.publicoEstimado, factors.segurancasPrivados);
+      const deficitSeguranca = Math.max(coberturaPrivada.necessarios - factors.segurancasPrivados, 0);
+      const sobraSeguranca = Math.max(factors.segurancasPrivados - coberturaPrivada.necessarios, 0);
 
       return [
         'Metodologia: regressão logística',
@@ -1568,6 +1755,7 @@
         `Probabilidade estimada: ${(modelo.probabilidade * 100).toFixed(1)}%`,
         'Coeficientes: iniciais e calibráveis; devem ser treinados com base histórica real para validação estatística.',
         `Público: ${factors.publicoEstimado.toLocaleString('pt-BR')}`,
+        factors.publicoEstimadoFonte ? `Base da estimativa de público: ${factors.publicoEstimadoFonte}` : 'Base da estimativa de público: informado manualmente.',
         `Histórico pesquisado: ${(factors.historicoEquipesScore * 100).toFixed(0)}%`,
         `Rivalidade: ${(factors.rivalidadeEquipes * 100).toFixed(0)}%`,
         `Posição de tabela: ${(factors.posicaoTabela * 100).toFixed(0)}%`,
@@ -1579,6 +1767,7 @@
         `Conflitos torcida x clube: ${(factors.conflitoTorcidaClube * 100).toFixed(0)}%`,
         `Seguranças privados: ${factors.segurancasPrivados.toLocaleString('pt-BR')}`,
         `Referência 1/100: ${coberturaPrivada.necessarios.toLocaleString('pt-BR')} seguranças necessários`,
+        deficitSeguranca > 0 ? `Déficit de seguranças privados: ${deficitSeguranca.toLocaleString('pt-BR')}` : `Déficit de seguranças privados: 0${sobraSeguranca ? `; sobra operacional: ${sobraSeguranca.toLocaleString('pt-BR')}` : ''}`,
         `Cobertura de segurança privada: ${(coberturaPrivada.cobertura * 100).toFixed(0)}%`,
         `Risco por déficit de segurança: ${(variaveis.riscoSeguranca * 100).toFixed(0)}%`,
         `Sinais nas observações: ${(variaveis.sinaisObservacoes * 100).toFixed(0)}%`
@@ -1884,12 +2073,13 @@
     function preencherFormularioComFatores(factors) {
       Object.entries(factors || {}).forEach(([key, value]) => {
         const input = document.getElementById(key);
-        if (!input || input.type === 'hidden') return;
+        if (!input || (input.type === 'hidden' && key !== 'publicoEstimadoFonte' && key !== 'segurancasRecomendados')) return;
         input.value = value;
       });
       if (factors?.historicoEquipesScore !== undefined) {
         document.getElementById('historicoEquipesScore').value = factors.historicoEquipesScore;
       }
+      atualizarStatusSeguranca();
     }
 
     function limparHistoricoAnalises() {
@@ -2722,6 +2912,17 @@
       }, 700);
     }
 
+    function preencherDiaSemanaPorData() {
+      const dataJogo = document.getElementById('dataJogo').value;
+      const diaInput = document.getElementById('diaSemana');
+
+      if (!dataJogo) return;
+
+      const data = new Date(`${dataJogo}T12:00:00`);
+      const mapa = ['domingo', 'segunda', 'terca', 'quarta', 'quinta', 'sexta', 'sabado'];
+      diaInput.value = mapa[data.getDay()];
+    }
+
     document.addEventListener('DOMContentLoaded', () => {
       if (location.protocol !== 'https:' && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
         location.replace(`https://${location.host}${location.pathname}${location.search}`);
@@ -2733,9 +2934,23 @@
       document.getElementById('logoutButton').addEventListener('click', logout);
       document.getElementById('historySearchButton').addEventListener('click', pesquisarHistoricoEquipes);
       document.getElementById('weatherSearchButton').addEventListener('click', () => atualizarPrevisaoMeteorologica());
+      document.getElementById('publicEstimateButton').addEventListener('click', () => estimarPublicoAutomatico());
+      document.getElementById('securityEstimateButton').addEventListener('click', aplicarReferenciaSegurancaPrivada);
       document.getElementById('equipesEnvolvidas').addEventListener('input', agendarPesquisaHistorico);
-      document.getElementById('localEvento').addEventListener('input', agendarPrevisaoMeteorologica);
-      document.getElementById('dataJogo').addEventListener('change', agendarPrevisaoMeteorologica);
+      document.getElementById('localEvento').addEventListener('input', () => {
+        agendarPrevisaoMeteorologica();
+        estimarPublicoAutomatico({ somenteSeVazio: true, origem: 'digitacao' });
+      });
+      document.getElementById('dataJogo').addEventListener('change', () => {
+        preencherDiaSemanaPorData();
+        agendarPrevisaoMeteorologica();
+        estimarPublicoAutomatico({ somenteSeVazio: true, origem: 'digitacao' });
+      });
+      document.getElementById('publicoEstimado').addEventListener('input', () => atualizarStatusSeguranca());
+      document.getElementById('segurancasPrivados').addEventListener('input', () => atualizarStatusSeguranca());
+      ['tipoCampeonato', 'diaSemana', 'meteorologia', 'rivalidadeEquipes', 'posicaoTabela'].forEach((id) => {
+        document.getElementById(id).addEventListener('change', () => estimarPublicoAutomatico({ somenteSeVazio: true, origem: 'digitacao' }));
+      });
       renderHistoricoAnalises();
     });
   </script>

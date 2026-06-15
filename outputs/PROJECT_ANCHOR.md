@@ -15,6 +15,8 @@ Estado ancorado como versao atual do **Analisador de Risco - NM Engenharia e Con
 - Todas as variaveis do formulario impactam o risco final.
 - Regra de seguranca privada 1/100 aplicada.
 - Meteorologia automatica por previsao do tempo do dia da partida via Open-Meteo, preenchendo a variavel meteorologia.
+- Publico estimado automaticamente por jogo/local/contexto e efetivo privado recomendado automaticamente pela referencia 1/100.
+- Dia de semana preenchido automaticamente pela data do jogo.
 - Resultado com medidor, barras por variavel e top fatores.
 - Plano operacional recomendado no resultado e no PDF.
 - Historico local de analises com reabertura e limpeza.
