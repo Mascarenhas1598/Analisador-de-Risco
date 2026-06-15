@@ -17,6 +17,8 @@ Estado ancorado como versao atual do **Analisador de Risco - NM Engenharia e Con
 - Meteorologia automatica por previsao do tempo do dia da partida via Open-Meteo, preenchendo a variavel meteorologia.
 - Publico estimado automaticamente por jogo/local/contexto e efetivo privado recomendado automaticamente pela referencia 1/100.
 - Dia de semana preenchido automaticamente pela data do jogo.
+- Validacao operacional automatica com alertas criticos/atencao/OK antes do plano operacional.
+- Secao Pos-evento com comparacao previsto x realizado e aprendizados para calibracao futura.
 - Resultado com medidor, barras por variavel e top fatores.
 - Plano operacional recomendado no resultado e no PDF.
 - Historico local de analises com reabertura e limpeza.

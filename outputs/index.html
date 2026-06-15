@@ -368,6 +368,46 @@
       color: #374151;
     }
 
+    .validation-panel {
+      margin-top: 20px;
+      padding: 16px;
+      border: 1px solid #fde68a;
+      border-radius: 8px;
+      background: #fffdf4;
+    }
+
+    .validation-panel h3 {
+      margin: 0 0 12px;
+      color: #92400e;
+    }
+
+    .validation-list {
+      display: grid;
+      gap: 10px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .validation-item {
+      display: grid;
+      gap: 4px;
+      padding: 10px 12px;
+      border-left: 4px solid var(--severity-color, #f59e0b);
+      border-radius: 6px;
+      background: #ffffff;
+      color: #374151;
+    }
+
+    .validation-item strong {
+      color: #111827;
+    }
+
+    .validation-meta {
+      color: var(--muted);
+      font-size: 0.84rem;
+    }
+
     .mitigation-list strong {
       display: block;
       color: #111827;
@@ -582,6 +622,34 @@
       background: var(--risk-color, #16a34a);
       font-weight: 800;
       font-size: 0.9rem;
+    }
+
+    .post-event-summary {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .post-event-card {
+      padding: 12px;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      background: #ffffff;
+      color: #374151;
+    }
+
+    .post-event-card strong {
+      display: block;
+      margin-top: 4px;
+      color: #111827;
+      font-size: 1.05rem;
+    }
+
+    .learning-list {
+      margin: 14px 0 0;
+      padding-left: 20px;
+      color: #374151;
     }
 
     .toast {
@@ -893,6 +961,77 @@
           <button class="button button-secondary button-small" type="button" onclick="limparHistoricoAnalises()">Limpar</button>
         </div>
         <div id="historicoAnalises" class="analysis-history"></div>
+      </section>
+
+      <section class="panel section" aria-labelledby="posEventoTitulo">
+        <div class="history-panel-header">
+          <div>
+            <h2 id="posEventoTitulo">Pós-evento</h2>
+            <p class="muted">Registre o realizado para comparar previsão, operação e ocorrências.</p>
+          </div>
+        </div>
+
+        <form id="postEventForm" class="form-grid" novalidate>
+          <div class="field field-full">
+            <label for="postEventAnalysisId">Análise de referência</label>
+            <select id="postEventAnalysisId" required>
+              <option value="">Selecione uma análise salva</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label for="publicoReal">Público real</label>
+            <input id="publicoReal" type="number" min="0" step="1" required>
+          </div>
+
+          <div class="field">
+            <label for="segurancasReal">Seguranças empregados reais</label>
+            <input id="segurancasReal" type="number" min="0" step="1" required>
+          </div>
+
+          <div class="field">
+            <label for="incidentesTorcida">Incidentes de torcida</label>
+            <input id="incidentesTorcida" type="number" min="0" step="1" value="0" required>
+          </div>
+
+          <div class="field">
+            <label for="atendimentosMedicos">Atendimentos médicos</label>
+            <input id="atendimentosMedicos" type="number" min="0" step="1" value="0" required>
+          </div>
+
+          <div class="field">
+            <label for="atrasosEntrada">Atrasos ou retenções na entrada</label>
+            <select id="atrasosEntrada" required>
+              <option value="nao">Não</option>
+              <option value="sim">Sim</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label for="tempoEvacuacao">Tempo de evacuação em minutos</label>
+            <input id="tempoEvacuacao" type="number" min="0" step="1" value="20" required>
+          </div>
+
+          <div class="field">
+            <label for="ocorrenciaGrave">Ocorrência grave</label>
+            <select id="ocorrenciaGrave" required>
+              <option value="nenhuma">Nenhuma</option>
+              <option value="moderada">Moderada</option>
+              <option value="grave">Grave</option>
+            </select>
+          </div>
+
+          <div class="field field-full">
+            <label for="observacoesPosEvento">Observações pós-evento</label>
+            <textarea id="observacoesPosEvento"></textarea>
+          </div>
+
+          <div class="actions field-full">
+            <button class="button" type="submit">Salvar pós-evento</button>
+          </div>
+        </form>
+
+        <div id="postEventResult" class="result hidden"></div>
       </section>
     </section>
   </main>
@@ -1744,6 +1883,7 @@
       const coberturaPrivada = calcularCoberturaSegurancaPrivada(factors.publicoEstimado, factors.segurancasPrivados);
       const deficitSeguranca = Math.max(coberturaPrivada.necessarios - factors.segurancasPrivados, 0);
       const sobraSeguranca = Math.max(factors.segurancasPrivados - coberturaPrivada.necessarios, 0);
+      const validacoes = gerarValidacoesOperacionais(factors, modelo);
 
       return [
         'Metodologia: regressão logística',
@@ -1770,8 +1910,148 @@
         deficitSeguranca > 0 ? `Déficit de seguranças privados: ${deficitSeguranca.toLocaleString('pt-BR')}` : `Déficit de seguranças privados: 0${sobraSeguranca ? `; sobra operacional: ${sobraSeguranca.toLocaleString('pt-BR')}` : ''}`,
         `Cobertura de segurança privada: ${(coberturaPrivada.cobertura * 100).toFixed(0)}%`,
         `Risco por déficit de segurança: ${(variaveis.riscoSeguranca * 100).toFixed(0)}%`,
-        `Sinais nas observações: ${(variaveis.sinaisObservacoes * 100).toFixed(0)}%`
+        `Sinais nas observações: ${(variaveis.sinaisObservacoes * 100).toFixed(0)}%`,
+        `Validações operacionais: ${validacoes.resumo}`
       ];
+    }
+
+    function gerarValidacoesOperacionais(factors, modelo) {
+      const variaveis = modelo.variaveis;
+      const cobertura = calcularCoberturaSegurancaPrivada(factors.publicoEstimado, factors.segurancasPrivados);
+      const deficit = Math.max(cobertura.necessarios - factors.segurancasPrivados, 0);
+      const alertas = [];
+
+      if (deficit > 0) {
+        alertas.push({
+          nivel: deficit >= Math.ceil(cobertura.necessarios * 0.2) ? 'critico' : 'atencao',
+          titulo: 'Efetivo privado abaixo da referência 1/100',
+          detalhe: `Necessários ${cobertura.necessarios.toLocaleString('pt-BR')} seguranças; informados ${factors.segurancasPrivados.toLocaleString('pt-BR')}; déficit de ${deficit.toLocaleString('pt-BR')}.`,
+          acao: 'Readequar escala antes da abertura dos portões ou reduzir exposição operacional nos filtros de acesso.'
+        });
+      }
+
+      if (variaveis.historicoEquipes >= 0.7 || variaveis.rivalidadeEquipes >= 0.7) {
+        alertas.push({
+          nivel: variaveis.conflitoTorcidaClube >= 0.4 ? 'critico' : 'atencao',
+          titulo: 'Rivalidade/histórico elevado',
+          detalhe: 'Confronto exige segregação de fluxos, vigilância ampliada e controle dos pontos de cruzamento.',
+          acao: 'Validar plano de chegada, separação de torcidas, escolta, barreiras e monitoramento no entorno.'
+        });
+      }
+
+      if (variaveis.tipoCampeonato >= 0.75 || factors.tipoCampeonato === 'final') {
+        alertas.push({
+          nivel: variaveis.posicaoTabela >= 0.6 ? 'critico' : 'atencao',
+          titulo: 'Jogo decisivo ou campeonato de alta pressão',
+          detalhe: 'O contexto competitivo pode elevar reação emocional a arbitragem, placar e resultado.',
+          acao: 'Prever reforço de supervisão nos setores sensíveis e protocolo de resposta para alteração de humor coletivo.'
+        });
+      }
+
+      if (variaveis.meteorologia >= 0.6) {
+        alertas.push({
+          nivel: variaveis.meteorologia >= 1 ? 'critico' : 'atencao',
+          titulo: 'Meteorologia adversa',
+          detalhe: factors.meteorologiaResumo || `Condição informada: ${formatarValor(factors.meteorologia)}.`,
+          acao: 'Revisar drenagem, áreas cobertas, comunicação ao público, filas externas e rotas de evacuação.'
+        });
+      }
+
+      if (variaveis.publico >= 0.75 && variaveis.riscoSeguranca > 0.05) {
+        alertas.push({
+          nivel: 'critico',
+          titulo: 'Grande público com déficit de segurança',
+          detalhe: 'A combinação aumenta pressão sobre acessos, revista, catracas, circulação e resposta a incidentes.',
+          acao: 'Tratar como pendência bloqueante de operação ou submeter à coordenação superior antes da liberação.'
+        });
+      }
+
+      if (variaveis.conflitoTorcidaClube >= 0.5) {
+        alertas.push({
+          nivel: 'atencao',
+          titulo: 'Conflito torcida x clube ativo',
+          detalhe: 'Há potencial de manifestações, protestos, pressão sobre atletas/dirigentes ou tensão no entorno.',
+          acao: 'Mapear lideranças, monitorar redes/chegada de grupos e posicionar equipe de mediação e resposta rápida.'
+        });
+      }
+
+      if (variaveis.sinaisObservacoes >= 0.28) {
+        alertas.push({
+          nivel: 'atencao',
+          titulo: 'Observações indicam sinais críticos',
+          detalhe: 'Foram detectados termos associados a risco operacional nas observações do avaliador.',
+          acao: 'Converter cada sinal em ordem de serviço com responsável, prazo e canal de acionamento.'
+        });
+      }
+
+      const normalizados = removerValidacoesDuplicadas(alertas);
+
+      if (!normalizados.length) {
+        normalizados.push({
+          nivel: 'ok',
+          titulo: 'Sem bloqueios operacionais automáticos',
+          detalhe: 'As variáveis informadas não geraram alertas críticos pela validação automática.',
+          acao: 'Manter monitoramento preventivo e registrar evidências para calibração futura.'
+        });
+      }
+
+      return {
+        itens: normalizados,
+        resumo: resumirValidacoes(normalizados)
+      };
+    }
+
+    function removerValidacoesDuplicadas(alertas) {
+      const vistos = new Set();
+      return alertas.filter((alerta) => {
+        const chave = alerta.titulo;
+        if (vistos.has(chave)) return false;
+        vistos.add(chave);
+        return true;
+      });
+    }
+
+    function resumirValidacoes(alertas) {
+      const criticos = alertas.filter((alerta) => alerta.nivel === 'critico').length;
+      const atencao = alertas.filter((alerta) => alerta.nivel === 'atencao').length;
+
+      if (criticos || atencao) {
+        return `${criticos} crítico(s), ${atencao} atenção(ões).`;
+      }
+
+      return 'sem bloqueios automáticos.';
+    }
+
+    function renderValidacoesOperacionais(validacoes) {
+      return `
+        <div class="validation-panel">
+          <h3>Validação operacional automática</h3>
+          <ul class="validation-list">
+            ${validacoes.itens.map((item) => renderValidacaoOperacional(item)).join('')}
+          </ul>
+        </div>
+      `;
+    }
+
+    function renderValidacaoOperacional(item) {
+      const cores = {
+        critico: '#dc2626',
+        atencao: '#f59e0b',
+        ok: '#16a34a'
+      };
+      const rotulos = {
+        critico: 'Crítico',
+        atencao: 'Atenção',
+        ok: 'OK'
+      };
+
+      return `
+        <li class="validation-item" style="--severity-color: ${cores[item.nivel] || cores.atencao};">
+          <strong>${escaparHTML(rotulos[item.nivel] || 'Atenção')} - ${escaparHTML(item.titulo)}</strong>
+          <span>${escaparHTML(item.detalhe)}</span>
+          <span class="validation-meta">Ação: ${escaparHTML(item.acao)}</span>
+        </li>
+      `;
     }
 
     function formatarValor(value) {
@@ -1790,6 +2070,7 @@
       const cenarioMitigado = calcularCenarioMitigado(data.factors);
       const fatoresBaixos = montarFatoresBaixaPressao(modelo);
       const planoOperacional = gerarPlanoOperacional(data, modelo, data.factors, cenarioMitigado);
+      const validacoesOperacionais = gerarValidacoesOperacionais(data.factors, modelo);
       const linhas = [
         `Pontuacao de risco: ${data.risco}/100`,
         `Resumo: ${data.resumo}`,
@@ -1831,6 +2112,8 @@
             ${contribuicoes.map((item) => renderBarraContribuicao(item)).join('')}
           </div>
         </div>
+
+        ${renderValidacoesOperacionais(validacoesOperacionais)}
 
         <div class="operational-plan">
           <h3>Plano operacional recomendado</h3>
@@ -2014,6 +2297,7 @@
       const atualizado = [registro, ...historico].slice(0, 20);
       localStorage.setItem(ANALYSIS_HISTORY_KEY, JSON.stringify(atualizado));
       renderHistoricoAnalises();
+      renderPostEventOptions();
     }
 
     function obterHistoricoAnalises() {
@@ -2050,11 +2334,13 @@
             </div>
             <div class="history-tools">
               <span class="history-score" style="--risk-color: ${cor};">${item.risco}</span>
+              ${item.postEvent ? '<span class="history-score" style="--risk-color: #047857;">Pós</span>' : ''}
               <button class="button button-secondary button-small" type="button" onclick="carregarAnaliseHistorico('${escaparAtributo(item.id)}')">Reabrir</button>
             </div>
           </article>
         `;
       }).join('');
+      renderPostEventOptions();
     }
 
     function carregarAnaliseHistorico(id) {
@@ -2085,7 +2371,191 @@
     function limparHistoricoAnalises() {
       localStorage.removeItem(ANALYSIS_HISTORY_KEY);
       renderHistoricoAnalises();
+      renderPostEventOptions();
+      document.getElementById('postEventResult').classList.add('hidden');
       mostrarNotificacao('Histórico local limpo.', 'sucesso');
+    }
+
+    function renderPostEventOptions() {
+      const select = document.getElementById('postEventAnalysisId');
+      if (!select) return;
+
+      const currentValue = select.value;
+      const historico = obterHistoricoAnalises();
+      select.innerHTML = '<option value="">Selecione uma análise salva</option>' + historico.map((item) => {
+        const jogo = item.factors?.equipesEnvolvidas || 'Jogo não informado';
+        const data = formatarDataRelatorio(item.factors?.dataJogo || '');
+        const status = item.postEvent ? ' - pós-evento salvo' : '';
+        return `<option value="${escaparAtributo(item.id)}">${escaparHTML(jogo)} | ${escaparHTML(data)} | risco ${item.risco}${escaparHTML(status)}</option>`;
+      }).join('');
+
+      if (historico.some((item) => item.id === currentValue)) {
+        select.value = currentValue;
+      }
+    }
+
+    function carregarDadosPosEventoSelecionado() {
+      const id = document.getElementById('postEventAnalysisId').value;
+      const item = obterHistoricoAnalises().find((registro) => registro.id === id);
+
+      if (!item) {
+        document.getElementById('postEventResult').classList.add('hidden');
+        return;
+      }
+
+      document.getElementById('publicoReal').value = item.postEvent?.publicoReal ?? item.factors?.publicoEstimado ?? '';
+      document.getElementById('segurancasReal').value = item.postEvent?.segurancasReal ?? item.factors?.segurancasPrivados ?? '';
+      document.getElementById('incidentesTorcida').value = item.postEvent?.incidentesTorcida ?? 0;
+      document.getElementById('atendimentosMedicos').value = item.postEvent?.atendimentosMedicos ?? 0;
+      document.getElementById('atrasosEntrada').value = item.postEvent?.atrasosEntrada ?? 'nao';
+      document.getElementById('tempoEvacuacao').value = item.postEvent?.tempoEvacuacao ?? 20;
+      document.getElementById('ocorrenciaGrave').value = item.postEvent?.ocorrenciaGrave ?? 'nenhuma';
+      document.getElementById('observacoesPosEvento').value = item.postEvent?.observacoesPosEvento ?? '';
+
+      if (item.postEvent) {
+        renderComparativoPosEvento(item, item.postEvent);
+      }
+    }
+
+    function handlePostEventSubmit(event) {
+      event.preventDefault();
+      const form = event.currentTarget;
+
+      if (!validarFormulario(form)) {
+        mostrarNotificacao('Revise os campos obrigatorios do pós-evento.', 'erro');
+        return;
+      }
+
+      const id = document.getElementById('postEventAnalysisId').value;
+      const historico = obterHistoricoAnalises();
+      const index = historico.findIndex((registro) => registro.id === id);
+
+      if (index < 0) {
+        mostrarNotificacao('Selecione uma análise salva para registrar o pós-evento.', 'erro');
+        return;
+      }
+
+      const registro = historico[index];
+      const postEvent = coletarDadosPosEvento(registro);
+      historico[index] = { ...registro, postEvent };
+      localStorage.setItem(ANALYSIS_HISTORY_KEY, JSON.stringify(historico));
+      renderHistoricoAnalises();
+      renderComparativoPosEvento(historico[index], postEvent);
+      mostrarNotificacao('Pós-evento salvo e comparado com a previsão.', 'sucesso');
+    }
+
+    function coletarDadosPosEvento(registro) {
+      const dados = {
+        registradoEm: new Date().toISOString(),
+        publicoReal: Number(document.getElementById('publicoReal').value || 0),
+        segurancasReal: Number(document.getElementById('segurancasReal').value || 0),
+        incidentesTorcida: Number(document.getElementById('incidentesTorcida').value || 0),
+        atendimentosMedicos: Number(document.getElementById('atendimentosMedicos').value || 0),
+        atrasosEntrada: document.getElementById('atrasosEntrada').value,
+        tempoEvacuacao: Number(document.getElementById('tempoEvacuacao').value || 0),
+        ocorrenciaGrave: document.getElementById('ocorrenciaGrave').value,
+        observacoesPosEvento: document.getElementById('observacoesPosEvento').value.trim()
+      };
+
+      dados.riscoReal = calcularRiscoRealObservado(registro, dados);
+      dados.aprendizados = gerarAprendizadosPosEvento(registro, dados);
+      return dados;
+    }
+
+    function calcularRiscoRealObservado(registro, dados) {
+      const publicoPrevisto = Number(registro.factors?.publicoEstimado || 0);
+      const segurancasPrevistos = Number(registro.factors?.segurancasPrivados || 0);
+      const desvioPublico = publicoPrevisto ? Math.abs(dados.publicoReal - publicoPrevisto) / publicoPrevisto : 0;
+      const desvioSeguranca = segurancasPrevistos ? Math.max(segurancasPrevistos - dados.segurancasReal, 0) / segurancasPrevistos : 0;
+      const evacuacaoExcedente = Math.max(dados.tempoEvacuacao - 20, 0);
+      const gravidade = {
+        nenhuma: 0,
+        moderada: 18,
+        grave: 35
+      }[dados.ocorrenciaGrave] || 0;
+
+      const score = 12
+        + Math.min(dados.incidentesTorcida * 12, 36)
+        + Math.min(dados.atendimentosMedicos * 1.5, 15)
+        + (dados.atrasosEntrada === 'sim' ? 8 : 0)
+        + Math.min(evacuacaoExcedente * 1.5, 15)
+        + Math.min(desvioPublico * 35, 15)
+        + Math.min(desvioSeguranca * 35, 15)
+        + gravidade;
+
+      return Math.round(limitarNumero(score, 0, 100));
+    }
+
+    function gerarAprendizadosPosEvento(registro, dados) {
+      const aprendizados = [];
+      const diferencaRisco = dados.riscoReal - registro.risco;
+      const publicoPrevisto = Number(registro.factors?.publicoEstimado || 0);
+      const segurancasPrevistos = Number(registro.factors?.segurancasPrivados || 0);
+
+      if (Math.abs(diferencaRisco) >= 15) {
+        aprendizados.push(diferencaRisco > 0
+          ? 'O risco observado ficou significativamente acima do previsto; revisar pesos de incidentes, público, conflitos e observações.'
+          : 'O risco observado ficou significativamente abaixo do previsto; registrar medidas mitigadoras que funcionaram.');
+      } else {
+        aprendizados.push('O risco observado ficou próximo da previsão; manter o caso como evidência de calibração.');
+      }
+
+      if (publicoPrevisto && Math.abs(dados.publicoReal - publicoPrevisto) / publicoPrevisto >= 0.15) {
+        aprendizados.push('Houve desvio relevante entre público estimado e público real; revisar regra de estimativa de público para jogos semelhantes.');
+      }
+
+      if (segurancasPrevistos && dados.segurancasReal < segurancasPrevistos) {
+        aprendizados.push('O efetivo real ficou abaixo do planejado; registrar impacto operacional e avaliar aderência à referência 1/100.');
+      }
+
+      if (dados.incidentesTorcida > 0 || dados.ocorrenciaGrave !== 'nenhuma') {
+        aprendizados.push('Ocorrências registradas devem alimentar a base histórica e a validação futura dos coeficientes.');
+      }
+
+      return removerTextosDuplicados(aprendizados);
+    }
+
+    function renderComparativoPosEvento(registro, postEvent) {
+      const container = document.getElementById('postEventResult');
+      const diferenca = postEvent.riscoReal - registro.risco;
+      const publicoPrevisto = Number(registro.factors?.publicoEstimado || 0);
+      const segurancasPrevistos = Number(registro.factors?.segurancasPrivados || 0);
+      const sinal = diferenca > 0 ? '+' : '';
+
+      container.classList.remove('hidden');
+      container.innerHTML = `
+        <h3>Comparação previsto x realizado</h3>
+        <p class="muted">${escaparHTML(registro.factors?.equipesEnvolvidas || 'Jogo não informado')} | ${escaparHTML(registro.factors?.localEvento || 'Local não informado')}</p>
+        <div class="post-event-summary">
+          <div class="post-event-card">
+            Risco previsto
+            <strong>${registro.risco}/100</strong>
+          </div>
+          <div class="post-event-card">
+            Risco observado
+            <strong>${postEvent.riscoReal}/100</strong>
+          </div>
+          <div class="post-event-card">
+            Diferença
+            <strong>${sinal}${diferenca} ponto(s)</strong>
+          </div>
+          <div class="post-event-card">
+            Público previsto x real
+            <strong>${publicoPrevisto.toLocaleString('pt-BR')} x ${postEvent.publicoReal.toLocaleString('pt-BR')}</strong>
+          </div>
+          <div class="post-event-card">
+            Segurança prevista x real
+            <strong>${segurancasPrevistos.toLocaleString('pt-BR')} x ${postEvent.segurancasReal.toLocaleString('pt-BR')}</strong>
+          </div>
+          <div class="post-event-card">
+            Ocorrências
+            <strong>${postEvent.incidentesTorcida} incidente(s), ${postEvent.atendimentosMedicos} atendimento(s)</strong>
+          </div>
+        </div>
+        <ul class="learning-list">
+          ${postEvent.aprendizados.map((item) => `<li>${escaparHTML(item)}</li>`).join('')}
+        </ul>
+      `;
     }
 
     async function aguardarRenderizacaoPDF(container) {
@@ -2120,6 +2590,7 @@
       const timestamp = new Date().toISOString().slice(0, 19).replaceAll(':', '-');
       const resultSummaryHTML = clone.querySelector('.result-summary')?.outerHTML || '';
       const chartHTML = clone.querySelector('.chart-section')?.outerHTML || '';
+      const validationHTML = clone.querySelector('.validation-panel')?.outerHTML || '';
       const operationalHTML = clone.querySelector('.operational-plan')?.outerHTML || '';
       const mitigationPanel = clone.querySelector('.mitigation-panel');
       const phaseCards = Array.from(mitigationPanel?.querySelectorAll('.phase-card') || []).map((node) => node.outerHTML);
@@ -2381,6 +2852,7 @@
         }
 
         .report-content .mitigation-panel,
+        .report-content .validation-panel,
         .report-content .scenario-box,
         .report-content .phase-card {
           border-radius: 6px;
@@ -2389,6 +2861,20 @@
         .report-content .mitigation-panel {
           padding: 12px 14px;
           background: #f8fbff;
+        }
+
+        .report-content .validation-panel {
+          margin-top: 0;
+          margin-bottom: 14px;
+          padding: 12px 14px;
+        }
+
+        .report-content .validation-list {
+          gap: 7px;
+        }
+
+        .report-content .validation-item {
+          padding: 8px 10px;
         }
 
         .report-content .operational-plan {
@@ -2584,6 +3070,7 @@
   <main class="report-page">
     <div class="report-corner report-corner-small"></div>
     <section class="report-content">
+      ${validationHTML}
       ${operationalHTML}
       <div class="mitigation-panel">
         <h3>Ações recomendadas para mitigação por fase</h3>
@@ -2931,11 +3418,13 @@
 
       document.getElementById('loginForm').addEventListener('submit', handleLogin);
       document.getElementById('riskForm').addEventListener('submit', handleRiskSubmit);
+      document.getElementById('postEventForm').addEventListener('submit', handlePostEventSubmit);
       document.getElementById('logoutButton').addEventListener('click', logout);
       document.getElementById('historySearchButton').addEventListener('click', pesquisarHistoricoEquipes);
       document.getElementById('weatherSearchButton').addEventListener('click', () => atualizarPrevisaoMeteorologica());
       document.getElementById('publicEstimateButton').addEventListener('click', () => estimarPublicoAutomatico());
       document.getElementById('securityEstimateButton').addEventListener('click', aplicarReferenciaSegurancaPrivada);
+      document.getElementById('postEventAnalysisId').addEventListener('change', carregarDadosPosEventoSelecionado);
       document.getElementById('equipesEnvolvidas').addEventListener('input', agendarPesquisaHistorico);
       document.getElementById('localEvento').addEventListener('input', () => {
         agendarPrevisaoMeteorologica();
@@ -2952,6 +3441,7 @@
         document.getElementById(id).addEventListener('change', () => estimarPublicoAutomatico({ somenteSeVazio: true, origem: 'digitacao' }));
       });
       renderHistoricoAnalises();
+      renderPostEventOptions();
     });
   </script>
 </body>

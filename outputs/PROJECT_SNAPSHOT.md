@@ -37,6 +37,10 @@ Estado ancorado em `PROJECT_ANCHOR.md`.
 - Estimativa automatica de publico incluida: usa equipes, local, capacidade do estadio, historico/rivalidade, campeonato, dia da semana, tabela e meteorologia para sugerir publico estimado.
 - Efetivo de seguranca privada automatizado pela referencia 1/100: calcula minimo recomendado, deficit ou sobra operacional e alimenta a analise final.
 - Campo "Dia de semana" preenchido automaticamente a partir da data do jogo.
+- Validacao operacional automatica incluida: gera alertas criticos/atencao/OK para deficit de efetivo, rivalidade elevada, jogo decisivo, meteorologia adversa, grande publico com deficit, conflito torcida x clube e sinais criticos nas observacoes.
+- Painel "Validacao operacional automatica" exibido no resultado e incorporado ao PDF antes do plano operacional.
+- Aba/secao "Pos-evento" incluida para registrar publico real, segurancas reais, incidentes, atendimentos medicos, atrasos de entrada, tempo de evacuacao, ocorrencia grave e observacoes.
+- Comparacao previsto x realizado incluida: calcula risco observado, diferenca para o risco previsto, compara publico/seguranca planejados x reais e gera aprendizados para calibracao futura.
 - Captura do PDF ajustada para renderizar o relatorio em area temporaria visivel, aguardar imagens/fontes e evitar pagina em branco.
 - Layout do PDF alinhado para proporcao A4, com largura fixa de captura, margens internas reduzidas e blocos de analise redimensionados para melhor encaixe na pagina.
 - Exportacao PDF refinada para computador: captura realizada manualmente com `html2canvas` e montagem do PDF com `jsPDF`, evitando o clone automatico do `html2pdf` que podia gerar paginas em branco.
