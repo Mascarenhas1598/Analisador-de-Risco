@@ -44,6 +44,11 @@ const server = http.createServer(async (request, response) => {
       return;
     }
 
+    if (request.method === 'POST' && request.url === '/api/previsao-tempo') {
+      await handlePrevisaoTempo(request, response);
+      return;
+    }
+
     if (request.method === 'GET' || request.method === 'HEAD') {
       await serveStatic(request, response);
       return;
@@ -143,6 +148,54 @@ async function handleHistoricoEquipes(request, response) {
       label: item.title || item.displayLink || 'Resultado',
       url: item.link
     })).filter((item) => item.url)
+  });
+}
+
+async function handlePrevisaoTempo(request, response) {
+  const body = await readJSON(request);
+  const localEvento = String(body.localEvento || '').trim();
+  const dataJogo = String(body.dataJogo || '').trim();
+
+  if (!localEvento || !dataJogo) {
+    sendJSON(response, 400, { error: 'Informe local do evento e data do jogo.' });
+    return;
+  }
+
+  const local = resolverCoordenadasEvento(localEvento);
+  const url = montarURLMeteorologia(local, dataJogo);
+  const meteoResponse = await fetch(url);
+
+  if (!meteoResponse.ok) {
+    sendJSON(response, 502, { error: `Consulta meteorologica falhou com status ${meteoResponse.status}.` });
+    return;
+  }
+
+  const data = await meteoResponse.json();
+  const daily = data.daily || {};
+  const index = Array.isArray(daily.time) ? daily.time.indexOf(dataJogo) : -1;
+
+  if (index < 0) {
+    sendJSON(response, 404, { error: 'Previsao indisponivel para a data informada.' });
+    return;
+  }
+
+  const meteo = classificarMeteorologia({
+    chuva: Number(daily.precipitation_sum?.[index] || 0),
+    vento: Number(daily.wind_speed_10m_max?.[index] || 0),
+    codigo: Number(daily.weather_code?.[index] || 0),
+    tempMax: Number(daily.temperature_2m_max?.[index] || 0),
+    tempMin: Number(daily.temperature_2m_min?.[index] || 0)
+  });
+
+  sendJSON(response, 200, {
+    ...meteo,
+    local: local.nome,
+    data: dataJogo,
+    coordenadas: {
+      latitude: local.latitude,
+      longitude: local.longitude
+    },
+    origem: 'open-meteo'
   });
 }
 
@@ -308,6 +361,96 @@ function normalizarTexto(value) {
     .replace(/[^a-z0-9\s]/g, ' ')
     .replace(/\s+/g, ' ')
     .trim();
+}
+
+function resolverCoordenadasEvento(localEvento) {
+  const texto = normalizarTexto(localEvento);
+
+  if (texto.includes('barradao') || texto.includes('manoel barradas')) {
+    return {
+      nome: 'Estadio Manoel Barradas - Barradao',
+      latitude: -12.9192,
+      longitude: -38.4286
+    };
+  }
+
+  if (texto.includes('pituacu')) {
+    return {
+      nome: 'Estadio de Pituacu',
+      latitude: -12.9454,
+      longitude: -38.4142
+    };
+  }
+
+  if (texto.includes('arena') || texto.includes('fonte nova')) {
+    return {
+      nome: 'Arena Fonte Nova',
+      latitude: -12.9788,
+      longitude: -38.5044
+    };
+  }
+
+  return {
+    nome: 'Salvador - BA',
+    latitude: -12.9777,
+    longitude: -38.5016
+  };
+}
+
+function montarURLMeteorologia(local, dataJogo) {
+  const today = new Date().toISOString().slice(0, 10);
+  const baseURL = dataJogo < today
+    ? 'https://archive-api.open-meteo.com/v1/archive'
+    : 'https://api.open-meteo.com/v1/forecast';
+  const url = new URL(baseURL);
+
+  url.searchParams.set('latitude', String(local.latitude));
+  url.searchParams.set('longitude', String(local.longitude));
+  url.searchParams.set('daily', 'weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum,wind_speed_10m_max');
+  url.searchParams.set('timezone', 'America/Bahia');
+  url.searchParams.set('start_date', dataJogo);
+  url.searchParams.set('end_date', dataJogo);
+
+  return url;
+}
+
+function classificarMeteorologia({ chuva, vento, codigo, tempMax, tempMin }) {
+  const temporal = [95, 96, 99].includes(codigo);
+  const chuvaForte = chuva >= 25 || [65, 67, 75, 82, 86].includes(codigo);
+  const chuvaModerada = chuva >= 8 || [61, 63, 66, 80, 81].includes(codigo);
+  const instavel = chuva > 0 || vento >= 28 || [45, 48, 51, 53, 55, 56, 57].includes(codigo);
+  let categoria = 'favoravel';
+
+  if (temporal || chuvaForte || vento >= 45) {
+    categoria = 'severa';
+  } else if (chuvaModerada) {
+    categoria = 'chuva';
+  } else if (instavel) {
+    categoria = 'instavel';
+  }
+
+  return {
+    categoria,
+    resumo: `Previsao: ${formatarCategoriaMeteorologica(categoria)}. Chuva ${chuva.toFixed(1)} mm, vento maximo ${vento.toFixed(0)} km/h, temperatura ${tempMin.toFixed(0)}-${tempMax.toFixed(0)} C.`,
+    indicadores: {
+      chuva,
+      vento,
+      codigo,
+      tempMax,
+      tempMin
+    }
+  };
+}
+
+function formatarCategoriaMeteorologica(categoria) {
+  const labels = {
+    favoravel: 'favoravel',
+    instavel: 'instavel',
+    chuva: 'chuva',
+    severa: 'severa'
+  };
+
+  return labels[categoria] || categoria;
 }
 
 function sendJSON(response, statusCode, data) {

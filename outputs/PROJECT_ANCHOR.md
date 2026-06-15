@@ -14,6 +14,7 @@ Estado ancorado como versao atual do **Analisador de Risco - NM Engenharia e Con
 - Modelo geral mantido para demais jogos.
 - Todas as variaveis do formulario impactam o risco final.
 - Regra de seguranca privada 1/100 aplicada.
+- Meteorologia automatica por previsao do tempo do dia da partida via Open-Meteo, preenchendo a variavel meteorologia.
 - Resultado com medidor, barras por variavel e top fatores.
 - Plano operacional recomendado no resultado e no PDF.
 - Historico local de analises com reabertura e limpeza.

@@ -32,6 +32,8 @@ Estado ancorado em `PROJECT_ANCHOR.md`.
 - Botao para baixar PDF da analise gerado no dispositivo do usuario, sem armazenamento no servidor.
 - Relatorio PDF com layout institucional da NM Engenharia e Consultoria, titulo "Analise de Risco" e referencia do jogo preenchida a partir da aba/campo "Equipes envolvidas".
 - Campo "Data" incluido no formulario logo abaixo de "Local do evento" e exibido no cabecalho do PDF abaixo da referencia do jogo.
+- Meteorologia automatica incluida: API `/api/previsao-tempo` consulta Open-Meteo por local/data, classifica em favoravel/instavel/chuva/severa e preenche o campo "Meteorologia prevista".
+- Locais reconhecidos para meteorologia: Arena Fonte Nova/Fonte Nova, Barradao/Manoel Barradas, Pituacu e fallback Salvador-BA.
 - Captura do PDF ajustada para renderizar o relatorio em area temporaria visivel, aguardar imagens/fontes e evitar pagina em branco.
 - Layout do PDF alinhado para proporcao A4, com largura fixa de captura, margens internas reduzidas e blocos de analise redimensionados para melhor encaixe na pagina.
 - Exportacao PDF refinada para computador: captura realizada manualmente com `html2canvas` e montagem do PDF com `jsPDF`, evitando o clone automatico do `html2pdf` que podia gerar paginas em branco.

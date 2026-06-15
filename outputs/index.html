@@ -837,6 +837,11 @@
               <option value="chuva">Chuva</option>
               <option value="severa">Severa</option>
             </select>
+            <input id="meteorologiaResumo" name="meteorologiaResumo" type="hidden" value="">
+            <div class="history-tools">
+              <p id="meteorologiaStatus" class="muted">Informe local e data para preencher automaticamente.</p>
+              <button id="weatherSearchButton" class="button button-secondary button-small" type="button">Atualizar previsão</button>
+            </div>
           </div>
 
           <div class="field">
@@ -931,6 +936,7 @@
     const ANALYSIS_HISTORY_KEY = 'nmRiskAnalysisHistory';
     const HISTORICO_CACHE = new Map();
     let historicoTimer = null;
+    let weatherTimer = null;
     const RIVALIDADES_CONHECIDAS = new Map([
       ['bahia|vitoria', { score: 0.88, nome: 'Ba-Vi' }],
       ['bahia|sport', { score: 0.64, nome: 'Superclássico do Nordeste' }],
@@ -1181,6 +1187,62 @@
       document.getElementById('historicoEquipesResultado').classList.add('hidden');
     }
 
+    async function atualizarPrevisaoMeteorologica({ silencioso = false } = {}) {
+      const localEvento = document.getElementById('localEvento').value.trim();
+      const dataJogo = document.getElementById('dataJogo').value;
+      const status = document.getElementById('meteorologiaStatus');
+
+      if (!localEvento || !dataJogo) {
+        status.textContent = 'Informe local e data para preencher automaticamente.';
+        return null;
+      }
+
+      status.textContent = 'Consultando previsão do tempo...';
+
+      try {
+        const response = await fetch('/api/previsao-tempo', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${getAuthToken()}`
+          },
+          body: JSON.stringify({ localEvento, dataJogo })
+        });
+
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`);
+        }
+
+        const data = await response.json();
+        document.getElementById('meteorologia').value = data.categoria;
+        document.getElementById('meteorologiaResumo').value = data.resumo || '';
+        status.textContent = `${data.resumo} Fonte: ${data.origem}, local: ${data.local}.`;
+
+        if (!silencioso) {
+          mostrarNotificacao('Meteorologia preenchida automaticamente.', 'sucesso');
+        }
+
+        return data;
+      } catch (error) {
+        console.error('Erro ao consultar meteorologia:', error);
+        status.textContent = 'Não foi possível obter previsão automática. Preencha manualmente.';
+        document.getElementById('meteorologiaResumo').value = '';
+
+        if (!silencioso) {
+          mostrarNotificacao('Previsão automática indisponível.', 'erro');
+        }
+
+        return null;
+      }
+    }
+
+    function agendarPrevisaoMeteorologica() {
+      window.clearTimeout(weatherTimer);
+      weatherTimer = window.setTimeout(() => {
+        atualizarPrevisaoMeteorologica({ silencioso: true });
+      }, 700);
+    }
+
     function renderizarLinksHistorico(links) {
       if (!links.length) return '';
 
@@ -1284,6 +1346,10 @@
       const form = event.currentTarget instanceof HTMLFormElement
         ? event.currentTarget
         : document.getElementById('riskForm');
+
+      if (!document.getElementById('meteorologia').value) {
+        await atualizarPrevisaoMeteorologica({ silencioso: true });
+      }
 
       if (!validarFormulario(form)) {
         mostrarNotificacao('Revise os campos obrigatorios.', 'erro');
@@ -1509,6 +1575,7 @@
         `Campeonato: ${formatarValor(factors.tipoCampeonato)}`,
         `Dia: ${formatarValor(factors.diaSemana)}`,
         `Meteorologia: ${formatarValor(factors.meteorologia)}`,
+        factors.meteorologiaResumo ? `Previsão meteorológica automática: ${factors.meteorologiaResumo}` : 'Previsão meteorológica automática: não registrada.',
         `Conflitos torcida x clube: ${(factors.conflitoTorcidaClube * 100).toFixed(0)}%`,
         `Seguranças privados: ${factors.segurancasPrivados.toLocaleString('pt-BR')}`,
         `Referência 1/100: ${coberturaPrivada.necessarios.toLocaleString('pt-BR')} seguranças necessários`,
@@ -2665,7 +2732,10 @@
       document.getElementById('riskForm').addEventListener('submit', handleRiskSubmit);
       document.getElementById('logoutButton').addEventListener('click', logout);
       document.getElementById('historySearchButton').addEventListener('click', pesquisarHistoricoEquipes);
+      document.getElementById('weatherSearchButton').addEventListener('click', () => atualizarPrevisaoMeteorologica());
       document.getElementById('equipesEnvolvidas').addEventListener('input', agendarPesquisaHistorico);
+      document.getElementById('localEvento').addEventListener('input', agendarPrevisaoMeteorologica);
+      document.getElementById('dataJogo').addEventListener('change', agendarPrevisaoMeteorologica);
       renderHistoricoAnalises();
     });
   </script>
