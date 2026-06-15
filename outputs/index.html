@@ -1526,7 +1526,8 @@
         });
 
         if (!response.ok) {
-          throw new Error(`HTTP ${response.status}`);
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(errorData.error || `HTTP ${response.status}`);
         }
 
         const data = await response.json();
@@ -1542,7 +1543,7 @@
         return data;
       } catch (error) {
         console.error('Erro ao consultar meteorologia:', error);
-        status.textContent = 'Não foi possível obter previsão automática. Preencha manualmente.';
+        status.textContent = `Não foi possível obter previsão automática. ${error.message || 'Preencha manualmente.'}`;
         document.getElementById('meteorologiaResumo').value = '';
 
         if (!silencioso) {

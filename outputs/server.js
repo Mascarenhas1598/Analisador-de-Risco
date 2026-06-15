@@ -163,40 +163,46 @@ async function handlePrevisaoTempo(request, response) {
 
   const local = resolverCoordenadasEvento(localEvento);
   const url = montarURLMeteorologia(local, dataJogo);
-  const meteoResponse = await fetch(url);
 
-  if (!meteoResponse.ok) {
-    sendJSON(response, 502, { error: `Consulta meteorologica falhou com status ${meteoResponse.status}.` });
-    return;
+  try {
+    const meteoResponse = await fetch(url);
+
+    if (!meteoResponse.ok) {
+      sendJSON(response, 200, criarPrevisaoMeteorologicaLocal(local, dataJogo, `open-meteo-status-${meteoResponse.status}`));
+      return;
+    }
+
+    const data = await meteoResponse.json();
+    const daily = data.daily || {};
+    const index = Array.isArray(daily.time) ? daily.time.indexOf(dataJogo) : -1;
+
+    if (index < 0) {
+      sendJSON(response, 200, criarPrevisaoMeteorologicaLocal(local, dataJogo, 'data-fora-da-janela-open-meteo'));
+      return;
+    }
+
+    const meteo = classificarMeteorologia({
+      chuva: Number(daily.precipitation_sum?.[index] || 0),
+      vento: Number(daily.wind_speed_10m_max?.[index] || 0),
+      codigo: Number(daily.weather_code?.[index] || 0),
+      tempMax: Number(daily.temperature_2m_max?.[index] || 0),
+      tempMin: Number(daily.temperature_2m_min?.[index] || 0)
+    });
+
+    sendJSON(response, 200, {
+      ...meteo,
+      local: local.nome,
+      data: dataJogo,
+      coordenadas: {
+        latitude: local.latitude,
+        longitude: local.longitude
+      },
+      origem: 'open-meteo'
+    });
+  } catch (error) {
+    console.error('Falha na previsao meteorologica externa:', error);
+    sendJSON(response, 200, criarPrevisaoMeteorologicaLocal(local, dataJogo, 'falha-conexao-open-meteo'));
   }
-
-  const data = await meteoResponse.json();
-  const daily = data.daily || {};
-  const index = Array.isArray(daily.time) ? daily.time.indexOf(dataJogo) : -1;
-
-  if (index < 0) {
-    sendJSON(response, 404, { error: 'Previsao indisponivel para a data informada.' });
-    return;
-  }
-
-  const meteo = classificarMeteorologia({
-    chuva: Number(daily.precipitation_sum?.[index] || 0),
-    vento: Number(daily.wind_speed_10m_max?.[index] || 0),
-    codigo: Number(daily.weather_code?.[index] || 0),
-    tempMax: Number(daily.temperature_2m_max?.[index] || 0),
-    tempMin: Number(daily.temperature_2m_min?.[index] || 0)
-  });
-
-  sendJSON(response, 200, {
-    ...meteo,
-    local: local.nome,
-    data: dataJogo,
-    coordenadas: {
-      latitude: local.latitude,
-      longitude: local.longitude
-    },
-    origem: 'open-meteo'
-  });
 }
 
 async function serveStatic(request, response) {
@@ -440,6 +446,50 @@ function classificarMeteorologia({ chuva, vento, codigo, tempMax, tempMin }) {
       tempMin
     }
   };
+}
+
+function criarPrevisaoMeteorologicaLocal(local, dataJogo, motivo) {
+  const mes = Number(String(dataJogo).slice(5, 7));
+  const perfil = obterPerfilClimaticoSalvador(mes);
+  const meteo = classificarMeteorologia({
+    chuva: perfil.chuva,
+    vento: perfil.vento,
+    codigo: perfil.codigo,
+    tempMax: perfil.tempMax,
+    tempMin: perfil.tempMin
+  });
+
+  return {
+    ...meteo,
+    resumo: `Estimativa meteorologica local: ${formatarCategoriaMeteorologica(meteo.categoria)}. ${perfil.descricao} Chuva estimada ${perfil.chuva.toFixed(1)} mm, vento ${perfil.vento.toFixed(0)} km/h, temperatura ${perfil.tempMin.toFixed(0)}-${perfil.tempMax.toFixed(0)} C.`,
+    local: local.nome,
+    data: dataJogo,
+    coordenadas: {
+      latitude: local.latitude,
+      longitude: local.longitude
+    },
+    origem: 'estimativa-local',
+    motivo
+  };
+}
+
+function obterPerfilClimaticoSalvador(mes) {
+  const perfis = {
+    1: { chuva: 2.5, vento: 21, codigo: 3, tempMin: 25, tempMax: 30, descricao: 'Periodo quente com pancadas isoladas em Salvador.' },
+    2: { chuva: 2.8, vento: 20, codigo: 3, tempMin: 25, tempMax: 30, descricao: 'Periodo quente com possibilidade de instabilidade pontual.' },
+    3: { chuva: 4.5, vento: 19, codigo: 51, tempMin: 25, tempMax: 30, descricao: 'Transicao para periodo mais umido, com atencao a chuva localizada.' },
+    4: { chuva: 8.5, vento: 18, codigo: 61, tempMin: 24, tempMax: 29, descricao: 'Mes historicamente umido, com maior probabilidade de chuva.' },
+    5: { chuva: 12, vento: 19, codigo: 63, tempMin: 23, tempMax: 28, descricao: 'Periodo chuvoso em Salvador, exigindo plano para filas e areas abertas.' },
+    6: { chuva: 10, vento: 21, codigo: 61, tempMin: 23, tempMax: 27, descricao: 'Periodo chuvoso, com risco de instabilidade em acessos e circulacao externa.' },
+    7: { chuva: 9, vento: 23, codigo: 61, tempMin: 22, tempMax: 27, descricao: 'Periodo ainda umido, com vento costeiro e possibilidade de chuva.' },
+    8: { chuva: 6, vento: 24, codigo: 51, tempMin: 22, tempMax: 27, descricao: 'Condicao de transicao, com instabilidade moderada e vento costeiro.' },
+    9: { chuva: 4, vento: 24, codigo: 3, tempMin: 23, tempMax: 28, descricao: 'Condicao geralmente controlavel, com vento costeiro.' },
+    10: { chuva: 3.5, vento: 23, codigo: 3, tempMin: 24, tempMax: 29, descricao: 'Condicao geralmente favoravel, com pancadas isoladas possiveis.' },
+    11: { chuva: 3, vento: 22, codigo: 3, tempMin: 24, tempMax: 30, descricao: 'Condicao quente e em geral favoravel, com atencao a calor e hidratacao.' },
+    12: { chuva: 2.8, vento: 22, codigo: 3, tempMin: 25, tempMax: 30, descricao: 'Condicao quente e em geral favoravel, com atencao a calor e hidratacao.' }
+  };
+
+  return perfis[mes] || perfis[6];
 }
 
 function formatarCategoriaMeteorologica(categoria) {

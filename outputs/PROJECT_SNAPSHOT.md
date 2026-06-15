@@ -34,6 +34,7 @@ Estado ancorado em `PROJECT_ANCHOR.md`.
 - Campo "Data" incluido no formulario logo abaixo de "Local do evento" e exibido no cabecalho do PDF abaixo da referencia do jogo.
 - Meteorologia automatica incluida: API `/api/previsao-tempo` consulta Open-Meteo por local/data, classifica em favoravel/instavel/chuva/severa e preenche o campo "Meteorologia prevista".
 - Locais reconhecidos para meteorologia: Arena Fonte Nova/Fonte Nova, Barradao/Manoel Barradas, Pituacu e fallback Salvador-BA.
+- Meteorologia corrigida com fallback automatico: se a data estiver fora da janela do Open-Meteo ou a consulta externa falhar, o sistema retorna estimativa climatica local de Salvador por mes, identificada como `estimativa-local`.
 - Estimativa automatica de publico incluida: usa equipes, local, capacidade do estadio, historico/rivalidade, campeonato, dia da semana, tabela e meteorologia para sugerir publico estimado.
 - Efetivo de seguranca privada automatizado pela referencia 1/100: calcula minimo recomendado, deficit ou sobra operacional e alimenta a analise final.
 - Campo "Dia de semana" preenchido automaticamente a partir da data do jogo.
