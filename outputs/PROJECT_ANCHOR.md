@@ -11,6 +11,9 @@ Estado ancorado como versao atual do **Analisador de Risco - NM Engenharia e Con
 - Preparacao para Google Custom Search por `GOOGLE_API_KEY` e `GOOGLE_CSE_ID`.
 - Calculo de risco por regressao logistica.
 - Modelo Ba-Vi calibrado com base historica real, restrito a Bahia x Vitoria/Vitoria x Bahia em Arena Fonte Nova/Fonte Nova ou Barradao.
+- Base geral do Bahia `BASE-DADOS-NM.xlsx` integrada como base-mãe com 324 jogos ate abril de 2024.
+- Modelo Bahia geral calibrado com recorte nao Ba-Vi da base-mãe, preservando o modelo do classico e evitando mistura estatistica.
+- Protecao para nao classificar Vitoria da Conquista como Ba-Vi.
 - Modelo geral mantido para demais jogos.
 - Todas as variaveis do formulario impactam o risco final.
 - Regra de seguranca privada 1/100 aplicada.

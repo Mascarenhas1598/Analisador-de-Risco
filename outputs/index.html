@@ -1093,6 +1093,13 @@
       ['bahia|fortaleza', { score: 0.5, nome: 'confronto regional nordestino' }],
       ['bahia|nautico', { score: 0.46, nome: 'confronto regional nordestino' }],
       ['bahia|santa cruz', { score: 0.44, nome: 'confronto regional nordestino' }],
+      ['bahia|ponte preta', { score: 0.54, nome: 'histórico Bahia na base geral NM' }],
+      ['bahia|corinthians', { score: 0.52, nome: 'histórico Bahia na base geral NM' }],
+      ['bahia|flamengo', { score: 0.5, nome: 'histórico Bahia na base geral NM' }],
+      ['bahia|fluminense', { score: 0.46, nome: 'histórico Bahia na base geral NM' }],
+      ['bahia|internacional', { score: 0.46, nome: 'histórico Bahia na base geral NM' }],
+      ['bahia|vasco', { score: 0.4, nome: 'histórico Bahia na base geral NM' }],
+      ['bahia|crb', { score: 0.34, nome: 'histórico Bahia na base geral NM' }],
       ['flamengo|fluminense', { score: 0.74, nome: 'Fla-Flu' }],
       ['flamengo|vasco', { score: 0.72, nome: 'Clássico dos Milhões' }],
       ['corinthians|palmeiras', { score: 0.78, nome: 'Derby Paulista' }],
@@ -1123,8 +1130,8 @@
       nome: 'Modelo Ba-Vi calibrado',
       escopo: 'Aplicavel somente a jogos Bahia x Vitoria ou Vitoria x Bahia em Salvador, com foco em Arena Fonte Nova e Barradao.',
       fonte: 'NM - BAxVI.xlsx',
-      jogos: 38,
-      riscoAlto: 15,
+      jogos: 41,
+      riscoAlto: 16,
       intercepto: -1.805,
       coeficientes: {
         publico: 0.18,
@@ -1138,6 +1145,28 @@
         riscoSeguranca: 1.01,
         complexidadeLocal: 0.1,
         sinaisObservacoes: 1.2
+      }
+    };
+
+    const BAHIA_GENERAL_HISTORICAL_MODEL = {
+      nome: 'Modelo Bahia geral calibrado',
+      escopo: 'Aplicavel a jogos do Bahia em Salvador sem recorte especifico Ba-Vi. Base-mãe com 324 jogos ate abril de 2024; recorte de calibracao geral exclui os 41 Ba-Vi para preservar o modelo do clássico.',
+      fonte: 'BASE-DADOS-NM.xlsx',
+      jogos: 283,
+      riscoAlto: 52,
+      intercepto: -2.05,
+      coeficientes: {
+        publico: 1.05,
+        historicoEquipes: 0.72,
+        rivalidadeEquipes: 0.95,
+        posicaoTabela: 0.5,
+        tipoCampeonato: 0.42,
+        diaSemana: 0.62,
+        meteorologia: 0.55,
+        conflitoTorcidaClube: 0.95,
+        riscoSeguranca: 0.52,
+        complexidadeLocal: 0.28,
+        sinaisObservacoes: 0.85
       }
     };
 
@@ -1587,6 +1616,7 @@
     function normalizarNomeEquipe(value) {
       const texto = normalizarTexto(value);
 
+      if (texto.includes('vitoria da conquista')) return 'vitoria da conquista';
       if (texto.includes('vitoria')) return 'vitoria';
       if (texto.includes('bahia')) return 'bahia';
       if (texto.includes('flamengo')) return 'flamengo';
@@ -1767,16 +1797,31 @@
     }
 
     function selecionarModeloLogistico(factors) {
-      return deveUsarModeloBaVi(factors) ? BA_VI_HISTORICAL_MODEL : LOGISTIC_MODEL;
+      if (deveUsarModeloBaVi(factors)) return BA_VI_HISTORICAL_MODEL;
+      if (deveUsarModeloBahiaGeral(factors)) return BAHIA_GENERAL_HISTORICAL_MODEL;
+      return LOGISTIC_MODEL;
     }
 
     function deveUsarModeloBaVi(factors) {
       const equipes = separarEquipes(factors.equipesEnvolvidas || '').map(normalizarNomeEquipe);
-      const envolveBavi = equipes.includes('bahia') && equipes.includes('vitoria');
+      const envolveBavi = equipes.includes('bahia') && equipes.includes('vitoria') && !equipes.includes('vitoria da conquista');
       const local = normalizarTexto(factors.localEvento || '');
-      const localCalibrado = local.includes('arena') || local.includes('fonte nova') || local.includes('barradao') || local.includes('barradao');
+      const localCalibrado = ehLocalHistoricoBahia(local);
 
       return envolveBavi && localCalibrado;
+    }
+
+    function deveUsarModeloBahiaGeral(factors) {
+      const equipes = separarEquipes(factors.equipesEnvolvidas || '').map(normalizarNomeEquipe);
+      const local = normalizarTexto(factors.localEvento || '');
+      const envolveBahia = equipes.includes('bahia');
+
+      return envolveBahia && ehLocalHistoricoBahia(local);
+    }
+
+    function ehLocalHistoricoBahia(localNormalizado) {
+      const local = normalizarTexto(localNormalizado || '');
+      return local.includes('arena') || local.includes('fonte nova') || local.includes('barradao') || local.includes('pituacu');
     }
 
     function montarVariaveisLogisticas(factors) {
@@ -1894,7 +1939,9 @@
         'Equação: P(risco) = 1 / (1 + exp(-z))',
         `Logit z: ${modelo.z.toFixed(3)}`,
         `Probabilidade estimada: ${(modelo.probabilidade * 100).toFixed(1)}%`,
-        'Coeficientes: iniciais e calibráveis; devem ser treinados com base histórica real para validação estatística.',
+        modelo.modelo === BAHIA_GENERAL_HISTORICAL_MODEL
+          ? 'Observação metodológica: modelo Bahia geral usa recorte não Ba-Vi da base-mãe para não diluir o comportamento específico do clássico.'
+          : 'Coeficientes: iniciais e calibráveis; devem ser treinados com base histórica real para validação estatística.',
         `Público: ${factors.publicoEstimado.toLocaleString('pt-BR')}`,
         factors.publicoEstimadoFonte ? `Base da estimativa de público: ${factors.publicoEstimadoFonte}` : 'Base da estimativa de público: informado manualmente.',
         `Histórico pesquisado: ${(factors.historicoEquipesScore * 100).toFixed(0)}%`,

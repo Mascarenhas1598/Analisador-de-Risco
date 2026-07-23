@@ -21,6 +21,10 @@ Estado ancorado em `PROJECT_ANCHOR.md`.
 - Preparacao para Google Custom Search via `GOOGLE_API_KEY` e `GOOGLE_CSE_ID`.
 - Calculo de risco por regressao logistica.
 - Modelo especifico Ba-Vi calibrado com base historica real `outputs/data/NM-BAxVI.xlsx`, aplicavel somente a Bahia x Vitoria/Vitoria x Bahia em Arena Fonte Nova/Fonte Nova ou Barradao.
+- Nova base historica geral do Bahia integrada em `outputs/data/BASE-DADOS-NM.xlsx` e `outputs/data/BASE-DADOS-NM.xls`, contendo 324 jogos ate abril de 2024.
+- Modelo Bahia geral calibrado criado a partir do recorte nao Ba-Vi da base-mãe: 283 jogos, 52 riscos altos, aplicavel a jogos do Bahia em Salvador sem recorte especifico do classico.
+- Regra de prioridade metodologica: Bahia x Vitoria usa o modelo Ba-Vi; demais jogos do Bahia em Arena/Fonte Nova, Pituacu ou Barradao usam modelo Bahia geral; outros jogos usam modelo geral.
+- Protecao contra falso positivo: Vitoria da Conquista nao aciona o modelo Ba-Vi.
 - Modelo geral preservado para todos os demais jogos sem base historica especifica.
 - Resultado visual com medidor de risco, barras por variavel e top 3 fatores de maior contribuicao.
 - Resumo de acoes recomendadas para mitigacao gerado apos a analise, organizado por fase do espetaculo esportivo.
