@@ -6,6 +6,9 @@ const PORT = Number(process.env.PORT || 4180);
 const HOST = process.env.HOST || '0.0.0.0';
 const GOOGLE_CUSTOM_SEARCH_API_KEY = process.env.GOOGLE_CUSTOM_SEARCH_API_KEY || process.env.GOOGLE_API_KEY || '';
 const GOOGLE_CSE_ID = process.env.GOOGLE_CSE_ID || '';
+const GOOGLE_KEY_SOURCE = process.env.GOOGLE_CUSTOM_SEARCH_API_KEY
+  ? 'GOOGLE_CUSTOM_SEARCH_API_KEY'
+  : (process.env.GOOGLE_API_KEY ? 'GOOGLE_API_KEY' : 'ausente');
 const APP_USERNAME = process.env.APP_USERNAME || '';
 const APP_PASSWORD = process.env.APP_PASSWORD || '';
 const PUBLIC_DIR = __dirname;
@@ -56,6 +59,11 @@ const server = http.createServer(async (request, response) => {
       return;
     }
 
+    if (request.method === 'GET' && request.url === '/api/google-status') {
+      sendJSON(response, 200, criarGoogleStatus());
+      return;
+    }
+
     if (request.method === 'GET' || request.method === 'HEAD') {
       await serveStatic(request, response);
       return;
@@ -73,6 +81,8 @@ server.listen(PORT, HOST, () => {
   console.log(`Analisador de Risco em http://${displayHost}:${PORT}/index.html`);
   if (!GOOGLE_CUSTOM_SEARCH_API_KEY || !GOOGLE_CSE_ID) {
     console.log('Google nao configurado. Defina GOOGLE_CUSTOM_SEARCH_API_KEY e GOOGLE_CSE_ID para pesquisa real.');
+  } else {
+    console.log(`Google Custom Search configurado via ${GOOGLE_KEY_SOURCE}; CSE ID informado.`);
   }
   if (!APP_USERNAME || !APP_PASSWORD) {
     console.log('Login local nao configurado. Defina APP_USERNAME e APP_PASSWORD.');
@@ -109,8 +119,13 @@ async function handleHistoricoEquipes(request, response) {
     return;
   }
 
-  if (!GOOGLE_CUSTOM_SEARCH_API_KEY || !GOOGLE_CSE_ID) {
-    sendJSON(response, 200, criarHistoricoLocal(equipes, 'local-sem-google'));
+  const googleStatus = criarGoogleStatus();
+
+  if (!googleStatus.configurado) {
+    const fallback = criarHistoricoLocal(equipes, 'local-sem-google');
+    fallback.resumo = `${fallback.resumo} Google Custom Search nao conectado: ${googleStatus.mensagem}.`;
+    fallback.googleStatus = googleStatus;
+    sendJSON(response, 200, fallback);
     return;
   }
 
@@ -127,6 +142,7 @@ async function handleHistoricoEquipes(request, response) {
   if (!googleResponse.ok) {
     const fallback = criarHistoricoLocal(equipes, 'local-fallback-google');
     fallback.resumo = `${fallback.resumo} A consulta ao Google falhou com status ${googleResponse.status}.`;
+    fallback.googleStatus = { ...googleStatus, consultaStatus: googleResponse.status };
     sendJSON(response, 200, fallback);
     return;
   }
@@ -223,11 +239,14 @@ async function handleCapacidadeLocal(request, response) {
 
   const fallback = calcularCapacidadeLocalServidor(localEvento);
 
-  if (!GOOGLE_CUSTOM_SEARCH_API_KEY || !GOOGLE_CSE_ID) {
+  const googleStatus = criarGoogleStatus();
+
+  if (!googleStatus.configurado) {
     sendJSON(response, 200, {
       ...fallback,
       origem: 'local-sem-google',
-      resumo: `${fallback.nome}: capacidade máxima declarada estimada em ${fallback.capacidade.toLocaleString('pt-BR')} e média histórica operacional estimada em ${fallback.mediaPublico.toLocaleString('pt-BR')}. Google Custom Search não conectado.`
+      resumo: `${fallback.nome}: capacidade máxima declarada estimada em ${fallback.capacidade.toLocaleString('pt-BR')} e média histórica operacional estimada em ${fallback.mediaPublico.toLocaleString('pt-BR')}. Google Custom Search não conectado: ${googleStatus.mensagem}.`,
+      googleStatus
     });
     return;
   }
@@ -247,7 +266,8 @@ async function handleCapacidadeLocal(request, response) {
       sendJSON(response, 200, {
         ...fallback,
         origem: 'local-fallback-google',
-        resumo: `${fallback.nome}: capacidade/média estimadas localmente porque a consulta Google falhou com status ${googleResponse.status}.`
+        resumo: `${fallback.nome}: capacidade/média estimadas localmente porque a consulta Google falhou com status ${googleResponse.status}.`,
+        googleStatus: { ...googleStatus, consultaStatus: googleResponse.status }
       });
       return;
     }
@@ -303,6 +323,27 @@ async function serveStatic(request, response) {
   } catch (error) {
     sendText(response, 404, 'Arquivo nao encontrado.');
   }
+}
+
+function criarGoogleStatus() {
+  const temApiKey = Boolean(GOOGLE_CUSTOM_SEARCH_API_KEY);
+  const temCseId = Boolean(GOOGLE_CSE_ID);
+  const faltando = [];
+
+  if (!temApiKey) faltando.push('GOOGLE_CUSTOM_SEARCH_API_KEY');
+  if (!temCseId) faltando.push('GOOGLE_CSE_ID');
+
+  return {
+    configurado: temApiKey && temCseId,
+    keySource: GOOGLE_KEY_SOURCE,
+    temApiKey,
+    temCseId,
+    apiKeyTamanho: GOOGLE_CUSTOM_SEARCH_API_KEY.length,
+    cseIdTamanho: GOOGLE_CSE_ID.length,
+    mensagem: faltando.length
+      ? `variavel(is) ausente(s): ${faltando.join(', ')}`
+      : 'variaveis recebidas pelo servidor'
+  };
 }
 
 async function readJSON(request) {
