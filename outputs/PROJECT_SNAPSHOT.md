@@ -42,6 +42,8 @@ Estado ancorado em `PROJECT_ANCHOR.md`.
 - Estimativa automatica de publico incluida: usa equipes, local, capacidade do estadio, historico/rivalidade, campeonato, dia da semana, tabela e meteorologia para sugerir publico estimado.
 - Efetivo de seguranca privada automatizado pela referencia 1/100: calcula minimo recomendado, deficit ou sobra operacional e alimenta a analise final.
 - Campo "Dia de semana" preenchido automaticamente a partir da data do jogo.
+- Novas variaveis pre-jogo incluidas no formulario e na regressao com pesos conservadores: horario da partida, mandante, venda/liberacao de alcool, JECRIM, torcida unica e protocolo de policiamento.
+- As novas variaveis aparecem nos detalhes da analise, no grafico de contribuicao e nas validacoes operacionais, mantendo ocorrencias reais apenas na secao Pos-evento.
 - Validacao operacional automatica incluida: gera alertas criticos/atencao/OK para deficit de efetivo, rivalidade elevada, jogo decisivo, meteorologia adversa, grande publico com deficit, conflito torcida x clube e sinais criticos nas observacoes.
 - Painel "Validacao operacional automatica" exibido no resultado e incorporado ao PDF antes do plano operacional.
 - Aba/secao "Pos-evento" incluida para registrar publico real, segurancas reais, incidentes, atendimentos medicos, atrasos de entrada, tempo de evacuacao, ocorrencia grave e observacoes.

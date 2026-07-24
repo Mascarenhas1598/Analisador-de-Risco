@@ -21,6 +21,8 @@ Estado ancorado como versao atual do **Analisador de Risco - NM Engenharia e Con
 - Fallback de meteorologia por estimativa climatica local quando Open-Meteo estiver indisponivel ou a data estiver fora da janela de previsao.
 - Publico estimado automaticamente por jogo/local/contexto e efetivo privado recomendado automaticamente pela referencia 1/100.
 - Dia de semana preenchido automaticamente pela data do jogo.
+- Variaveis pre-jogo da base geral incluidas com impacto conservador na regressao: horario, mandante, alcool, JECRIM, torcida unica e protocolo de policiamento.
+- Ocorrencias reais continuam reservadas ao Pos-evento, evitando circularidade no calculo pre-jogo.
 - Validacao operacional automatica com alertas criticos/atencao/OK antes do plano operacional.
 - Secao Pos-evento com comparacao previsto x realizado e aprendizados para calibracao futura.
 - Resultado com medidor, barras por variavel e top fatores.

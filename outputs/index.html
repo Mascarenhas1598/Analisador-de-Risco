@@ -902,6 +902,23 @@
           </div>
 
           <div class="field">
+            <label for="horarioPartida">Horário da partida</label>
+            <select id="horarioPartida" name="horarioPartida" required>
+              <option value="ate1830">Início até 18h30</option>
+              <option value="apos1830">Início após 18h30</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label for="mandante">Mandante</label>
+            <select id="mandante" name="mandante" required>
+              <option value="bahia">Bahia</option>
+              <option value="vitoria">Vitória</option>
+              <option value="outro">Outro</option>
+            </select>
+          </div>
+
+          <div class="field">
             <label for="meteorologia">Meteorologia prevista</label>
             <select id="meteorologia" name="meteorologia" required>
               <option value="">Selecione</option>
@@ -918,8 +935,42 @@
           </div>
 
           <div class="field">
+            <label for="alcoolLiberado">Venda/liberação de álcool</label>
+            <select id="alcoolLiberado" name="alcoolLiberado" required>
+              <option value="nao">Não</option>
+              <option value="sim">Sim</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label for="jecrim">JECRIM no evento</label>
+            <select id="jecrim" name="jecrim" required>
+              <option value="sim">Sim</option>
+              <option value="nao">Não</option>
+            </select>
+          </div>
+
+          <div class="field">
             <label for="conflitoTorcidaClube">Conflitos torcida x clube (0 a 1)</label>
             <input id="conflitoTorcidaClube" name="conflitoTorcidaClube" type="number" min="0" max="1" step="0.01" required>
+          </div>
+
+          <div class="field">
+            <label for="torcidaUnica">Torcida única</label>
+            <select id="torcidaUnica" name="torcidaUnica" required>
+              <option value="nao">Não</option>
+              <option value="sim">Sim</option>
+              <option value="nao_aplicavel">Não aplicável</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label for="protocoloPoliciamento">Protocolo de policiamento</label>
+            <select id="protocoloPoliciamento" name="protocoloPoliciamento" required>
+              <option value="obedece">Obedece</option>
+              <option value="nao_obedece">Não obedece</option>
+              <option value="nao_informado">Não informado</option>
+            </select>
           </div>
 
           <div class="field">
@@ -1118,8 +1169,14 @@
         posicaoTabela: 0.65,
         tipoCampeonato: 0.75,
         diaSemana: 0.45,
+        horarioPartida: 0.28,
+        mandante: 0.22,
         meteorologia: 0.85,
+        alcoolLiberado: 0.22,
+        jecrim: 0.18,
         conflitoTorcidaClube: 1.15,
+        torcidaUnica: 0.2,
+        protocoloPoliciamento: 0.32,
         riscoSeguranca: 0.8,
         complexidadeLocal: 0.55,
         sinaisObservacoes: 0.65
@@ -1140,8 +1197,14 @@
         posicaoTabela: 0.12,
         tipoCampeonato: 0.21,
         diaSemana: 0.22,
+        horarioPartida: 0.14,
+        mandante: 0.18,
         meteorologia: 0.08,
+        alcoolLiberado: 0.14,
+        jecrim: 0.12,
         conflitoTorcidaClube: 1.2,
+        torcidaUnica: 0.16,
+        protocoloPoliciamento: 0.22,
         riscoSeguranca: 1.01,
         complexidadeLocal: 0.1,
         sinaisObservacoes: 1.2
@@ -1162,8 +1225,14 @@
         posicaoTabela: 0.5,
         tipoCampeonato: 0.42,
         diaSemana: 0.62,
+        horarioPartida: 0.5,
+        mandante: 0.12,
         meteorologia: 0.55,
+        alcoolLiberado: 0.18,
+        jecrim: 0.16,
         conflitoTorcidaClube: 0.95,
+        torcidaUnica: 0.18,
+        protocoloPoliciamento: 0.36,
         riscoSeguranca: 0.52,
         complexidadeLocal: 0.28,
         sinaisObservacoes: 0.85
@@ -1402,7 +1471,10 @@
         localEvento: document.getElementById('localEvento').value,
         tipoCampeonato: document.getElementById('tipoCampeonato').value,
         diaSemana: document.getElementById('diaSemana').value,
+        horarioPartida: document.getElementById('horarioPartida').value,
         meteorologia: document.getElementById('meteorologia').value,
+        alcoolLiberado: document.getElementById('alcoolLiberado').value,
+        torcidaUnica: document.getElementById('torcidaUnica').value,
         historicoEquipesScore: Number(document.getElementById('historicoEquipesScore').value || 0),
         rivalidadeEquipes: Number(document.getElementById('rivalidadeEquipes').value || 0),
         posicaoTabela: Number(document.getElementById('posicaoTabela').value || 0)
@@ -1446,6 +1518,19 @@
         sexta: 0.03,
         sabado: 0.06,
         domingo: 0.05
+      });
+      ocupacao += pesoPorValor(contexto.horarioPartida, {
+        ate1830: 0.02,
+        apos1830: -0.02
+      });
+      ocupacao += pesoPorValor(contexto.alcoolLiberado, {
+        sim: 0.01,
+        nao: 0
+      });
+      ocupacao += pesoPorValor(contexto.torcidaUnica, {
+        sim: -0.02,
+        nao: 0.02,
+        nao_aplicavel: 0
       });
       ocupacao += tabela * 0.1;
       ocupacao += Math.max(historico, rivalidade) * 0.08;
@@ -1852,6 +1937,29 @@
         chuva: 0.6,
         severa: 1
       });
+      const horarioPartida = pesoPorValor(factors.horarioPartida, {
+        ate1830: 0.7,
+        apos1830: 0.35
+      });
+      const mandante = calcularRiscoMandante(factors);
+      const alcoolLiberado = pesoPorValor(factors.alcoolLiberado, {
+        nao: 0.18,
+        sim: 0.42
+      });
+      const jecrim = pesoPorValor(factors.jecrim, {
+        sim: 0.08,
+        nao: 0.45
+      });
+      const torcidaUnica = pesoPorValor(factors.torcidaUnica, {
+        sim: 0.18,
+        nao: 0.45,
+        nao_aplicavel: 0.25
+      });
+      const protocoloPoliciamento = pesoPorValor(factors.protocoloPoliciamento, {
+        obedece: 0.08,
+        nao_obedece: 0.62,
+        nao_informado: 0.32
+      });
       const complexidadeLocal = calcularComplexidadeLocal(factors.localEvento);
       const sinaisObservacoes = calcularSinaisObservacoes(factors.observacoes);
 
@@ -1862,12 +1970,27 @@
         posicaoTabela: limitarNumero(factors.posicaoTabela, 0, 1),
         tipoCampeonato: campeonato,
         diaSemana: dia,
+        horarioPartida,
+        mandante,
         meteorologia,
+        alcoolLiberado,
+        jecrim,
         conflitoTorcidaClube: limitarNumero(factors.conflitoTorcidaClube, 0, 1),
+        torcidaUnica,
+        protocoloPoliciamento,
         riscoSeguranca,
         complexidadeLocal,
         sinaisObservacoes
       };
+    }
+
+    function calcularRiscoMandante(factors) {
+      const mandante = factors.mandante || '';
+
+      if (mandante === 'vitoria' && deveUsarModeloBaVi(factors)) return 0.62;
+      if (mandante === 'bahia') return 0.16;
+      if (mandante === 'vitoria') return 0.42;
+      return 0.3;
     }
 
     function calcularCoberturaSegurancaPrivada(publicoEstimado, segurancasPrivados) {
@@ -1950,9 +2073,15 @@
         `Complexidade do local: ${(variaveis.complexidadeLocal * 100).toFixed(0)}%`,
         `Campeonato: ${formatarValor(factors.tipoCampeonato)}`,
         `Dia: ${formatarValor(factors.diaSemana)}`,
+        `Horário da partida: ${formatarValor(factors.horarioPartida)}`,
+        `Mandante: ${formatarValor(factors.mandante)}`,
         `Meteorologia: ${formatarValor(factors.meteorologia)}`,
         factors.meteorologiaResumo ? `Previsão meteorológica automática: ${factors.meteorologiaResumo}` : 'Previsão meteorológica automática: não registrada.',
+        `Venda/liberação de álcool: ${formatarValor(factors.alcoolLiberado)}`,
+        `JECRIM no evento: ${formatarValor(factors.jecrim)}`,
         `Conflitos torcida x clube: ${(factors.conflitoTorcidaClube * 100).toFixed(0)}%`,
+        `Torcida única: ${formatarValor(factors.torcidaUnica)}`,
+        `Protocolo de policiamento: ${formatarValor(factors.protocoloPoliciamento)}`,
         `Seguranças privados: ${factors.segurancasPrivados.toLocaleString('pt-BR')}`,
         `Referência 1/100: ${coberturaPrivada.necessarios.toLocaleString('pt-BR')} seguranças necessários`,
         deficitSeguranca > 0 ? `Déficit de seguranças privados: ${deficitSeguranca.toLocaleString('pt-BR')}` : `Déficit de seguranças privados: 0${sobraSeguranca ? `; sobra operacional: ${sobraSeguranca.toLocaleString('pt-BR')}` : ''}`,
@@ -2002,6 +2131,49 @@
           titulo: 'Meteorologia adversa',
           detalhe: factors.meteorologiaResumo || `Condição informada: ${formatarValor(factors.meteorologia)}.`,
           acao: 'Revisar drenagem, áreas cobertas, comunicação ao público, filas externas e rotas de evacuação.'
+        });
+      }
+
+      if (variaveis.alcoolLiberado >= 0.4 && (variaveis.publico >= 0.5 || variaveis.rivalidadeEquipes >= 0.5)) {
+        alertas.push({
+          nivel: 'atencao',
+          titulo: 'Álcool liberado em contexto sensível',
+          detalhe: 'A base histórica indica que álcool deve ser tratado como fator operacional complementar, especialmente com público elevado ou rivalidade.',
+          acao: 'Reforçar monitoramento de consumo, bares, circulação, sanitários e pontos de concentração.'
+        });
+      }
+
+      if (variaveis.jecrim >= 0.4) {
+        alertas.push({
+          nivel: 'atencao',
+          titulo: 'JECRIM não previsto',
+          detalhe: 'A ausência de estrutura de resposta judicial rápida reduz capacidade de encaminhamento de ocorrências no evento.',
+          acao: 'Validar fluxo com segurança pública, autoridade competente e registro formal de ocorrências.'
+        });
+      }
+
+      if (variaveis.torcidaUnica <= 0.2 && variaveis.rivalidadeEquipes >= 0.7) {
+        alertas.push({
+          nivel: 'atencao',
+          titulo: 'Torcida única não elimina risco',
+          detalhe: 'Torcida única reduz confronto entre torcidas, mas não elimina tensão interna, protestos ou conflito torcida x clube.',
+          acao: 'Manter monitoramento de setores organizados, chegada de grupos e reação ao resultado.'
+        });
+      }
+
+      if (variaveis.protocoloPoliciamento >= 0.6) {
+        alertas.push({
+          nivel: 'critico',
+          titulo: 'Protocolo de policiamento não obedecido',
+          detalhe: 'A não conformidade do protocolo aumenta exposição operacional em acessos, entorno e resposta a incidentes.',
+          acao: 'Revisar dimensionamento, postos, rotas e matriz de responsabilidade antes da liberação da operação.'
+        });
+      } else if (variaveis.protocoloPoliciamento >= 0.3) {
+        alertas.push({
+          nivel: 'atencao',
+          titulo: 'Protocolo de policiamento não informado',
+          detalhe: 'A falta de confirmação do protocolo reduz confiabilidade da análise operacional.',
+          acao: 'Confirmar aderência do plano de policiamento com a coordenação antes da abertura dos portões.'
         });
       }
 
@@ -3212,13 +3384,21 @@
         ajustado.observacoes = '';
       }
 
+      if (ajustado.protocoloPoliciamento === 'nao_obedece' || ajustado.protocoloPoliciamento === 'nao_informado') {
+        ajustado.protocoloPoliciamento = 'obedece';
+      }
+
+      if (ajustado.jecrim === 'nao') {
+        ajustado.jecrim = 'sim';
+      }
+
       const riscoAtual = calcularPontuacaoRisco(factors);
       const riscoAjustado = calcularPontuacaoRisco(ajustado);
 
       return {
         risco: riscoAjustado,
         reducao: Math.max(riscoAtual - riscoAjustado, 0),
-        descricao: 'A simulação mantém fatores não controláveis, como posição de tabela, campeonato, dia e histórico, e ajusta apenas fatores mitigáveis como déficit de segurança, conflitos e sinais críticos nas observações.'
+        descricao: 'A simulação mantém fatores não controláveis, como posição de tabela, campeonato, dia, horário, mandante e histórico, e ajusta apenas fatores mitigáveis como déficit de segurança, conflitos, protocolo de policiamento, JECRIM e sinais críticos nas observações.'
       };
     }
 
@@ -3228,7 +3408,9 @@
         conflitoTorcidaClube: 'conflito torcida x clube baixo',
         sinaisObservacoes: 'sem sinais críticos nas observações',
         riscoSeguranca: 'cobertura de segurança adequada',
-        meteorologia: 'meteorologia favorável'
+        meteorologia: 'meteorologia favorável',
+        jecrim: 'JECRIM previsto',
+        protocoloPoliciamento: 'protocolo de policiamento obedecido'
       };
 
       return Object.entries(labels)
@@ -3259,6 +3441,9 @@
       const observacaoCritica = variaveis.sinaisObservacoes >= 0.28;
       const grandePublico = variaveis.publico >= 0.6;
       const altoRisco = score >= 70;
+      const alcoolSensivel = variaveis.alcoolLiberado >= 0.4;
+      const semJecrim = variaveis.jecrim >= 0.4;
+      const protocoloCritico = variaveis.protocoloPoliciamento >= 0.6;
 
       return [
         {
@@ -3268,6 +3453,7 @@
             'Credenciar e controlar entrada de equipes de catering, TV, limpeza, logística, manutenção e fornecedores.',
             'Conferir rotas de serviço, docas, áreas técnicas, geradores, comunicação, iluminação e pontos de emergência.',
             variaveis.riscoSeguranca > 0.05 ? `Ajustar escala de segurança privada antes da operação: referência 1/100 exige ${cobertura.necessarios.toLocaleString('pt-BR')} seguranças; déficit atual de ${deficit.toLocaleString('pt-BR')}.` : 'Confirmar que a escala de segurança privada atende à referência 1/100.',
+            protocoloCritico ? 'Revisar protocolo de policiamento, postos, rotas e matriz de responsabilidade antes de liberar a operação.' : null,
             observacaoCritica ? 'Transformar sinais críticos das observações em ordens de serviço com responsável, prazo e canal de acionamento.' : 'Validar checklist de riscos sem pendências críticas nas observações.',
             meteoCritica ? 'Preparar plano de contingência meteorológica para estruturas temporárias, áreas abertas, drenagem e comunicação ao público.' : null
           ])
@@ -3280,6 +3466,7 @@
             entornoComplexo ? 'Reforçar pontos de concentração no entorno, vias públicas, estacionamentos, praças e gargalos de acesso.' : 'Manter patrulhamento preventivo no entorno e pontos de aproximação.',
             rivalidadeAlta ? 'Separar fluxos de torcidas desde a chegada, com barreiras, orientação visual e equipes posicionadas nos pontos de cruzamento.' : 'Confirmar orientação de fluxo único e comunicação clara nos acessos.',
             conflitoAtivo ? 'Acompanhar manifestações ou tensão torcida x clube com equipe de mediação e resposta rápida.' : null,
+            alcoolSensivel ? 'Reforçar supervisão de bares, consumo de álcool, sanitários e pontos de concentração antes da entrada.' : null,
             grandePublico ? 'Abrir pontos de orientação, hidratação, banheiros e triagem para reduzir pressão sobre os filtros.' : null
           ])
         },
@@ -3290,6 +3477,7 @@
             'Dimensionar revista, catracas, filas, acessibilidade e orientação para evitar compressão de público.',
             variaveis.riscoSeguranca > 0.05 ? 'Reposicionar efetivo para filtros mais carregados e priorizar reforço onde houver déficit de cobertura.' : 'Manter supervisão de cobertura dos postos 1/100 durante a entrada.',
             rivalidadeAlta ? 'Manter setores e acessos segregados, com escolta e horários diferenciados para grupos visitantes quando aplicável.' : null,
+            semJecrim ? 'Confirmar fluxo alternativo de registro e encaminhamento de ocorrências pela ausência de JECRIM no evento.' : null,
             meteoCritica ? 'Comunicar condição meteorológica, rotas cobertas e procedimentos de abrigo ou atraso operacional.' : null
           ])
         },
@@ -3344,8 +3532,14 @@
         posicaoTabela: 'Posição de tabela',
         tipoCampeonato: 'Campeonato',
         diaSemana: 'Dia da semana',
+        horarioPartida: 'Horário',
+        mandante: 'Mandante',
         meteorologia: 'Meteorologia',
+        alcoolLiberado: 'Álcool',
+        jecrim: 'JECRIM',
         conflitoTorcidaClube: 'Conflito torcida x clube',
+        torcidaUnica: 'Torcida única',
+        protocoloPoliciamento: 'Protocolo policiamento',
         riscoSeguranca: 'Déficit de segurança',
         complexidadeLocal: 'Complexidade do local',
         sinaisObservacoes: 'Observações'
@@ -3485,7 +3679,7 @@
       });
       document.getElementById('publicoEstimado').addEventListener('input', () => atualizarStatusSeguranca());
       document.getElementById('segurancasPrivados').addEventListener('input', () => atualizarStatusSeguranca());
-      ['tipoCampeonato', 'diaSemana', 'meteorologia', 'rivalidadeEquipes', 'posicaoTabela'].forEach((id) => {
+      ['tipoCampeonato', 'diaSemana', 'horarioPartida', 'meteorologia', 'alcoolLiberado', 'torcidaUnica', 'rivalidadeEquipes', 'posicaoTabela'].forEach((id) => {
         document.getElementById(id).addEventListener('change', () => estimarPublicoAutomatico({ somenteSeVazio: true, origem: 'digitacao' }));
       });
       renderHistoricoAnalises();
