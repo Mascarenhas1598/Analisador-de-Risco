@@ -31,6 +31,10 @@ Estado ancorado como versao atual do **Analisador de Risco - NM Engenharia e Con
 - Secao Pos-evento com comparacao previsto x realizado e aprendizados para calibracao futura.
 - Resultado com medidor, barras por variavel e top fatores.
 - Modulo complementar de probabilidade por tipicidade de incidente incluido abaixo do risco geral, com percentuais estimados e prioridades de atencao da seguranca.
+- Busca assistida integrada como evidencia externa complementar por tipicidade, sem substituir, comandar ou sobrepor variaveis da regressao logistica principal.
+- Regua do indice externo: 0% sem noticias relevantes, 5% mencoes fracas/antigas, 10% a 20% noticias com incidentes semelhantes e 20% a 30% ocorrencia recente/aderente ao jogo, torcida, adversario ou local.
+- A evidencia externa e aplicada apenas na tipicidade correspondente: briga no entorno reforca briga no entorno; arremesso reforca arremesso; sinalizador reforca sinalizador; perfurocortante reforca perfurocortante; dano estrutural reforca dano estrutural; invasao reforca invasao.
+- Categorias da busca assistida refinadas com termos de contexto para reduzir falsos positivos e evitar dupla contagem entre briga no entorno, briga interna, arremesso e dano estrutural.
 - Tipicidades contempladas: invasao de campo, arremesso de objetos, uso de sinalizadores, ingresso de objetos perfurocortantes, briga no entorno, briga interna e danos a estrutura do estadio.
 - Plano operacional recomendado no resultado e no PDF.
 - Historico local de analises com reabertura e limpeza.

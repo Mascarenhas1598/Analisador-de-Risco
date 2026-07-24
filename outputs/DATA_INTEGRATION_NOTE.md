@@ -30,3 +30,7 @@ Ordem de aplicacao:
 A base geral deve ser usada para melhorar risco historico de adversarios, publico esperado, validacao pos-evento e calibracao do modelo Bahia geral. O modelo Ba-Vi permanece como recorte especializado para classicos contra o Vitoria.
 
 O modulo de tipicidades deve ser tratado como camada operacional complementar: ele prioriza incidentes provaveis para planejamento de seguranca, mas nao substitui a probabilidade geral da regressao logistica.
+
+A busca assistida/Google Custom Search deve gerar apenas evidencia externa complementar por tipicidade. Essa evidencia aumenta ou nao a probabilidade especifica do incidente compatível com a fonte encontrada, dentro de limite controlado, sem alterar a metodologia principal da regressao logistica do risco geral e sem sobrepor variaveis ja existentes.
+
+Categorias com termos amplos devem exigir contexto operacional para evitar dupla contagem. Exemplo: briga no entorno exige referencia a entorno/rua/arredores; briga interna exige estadio/setor/arquibancada; arremesso exige verbo de arremesso e objeto; dano estrutural exige dano e estrutura/patrimonio.

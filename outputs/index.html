@@ -367,7 +367,7 @@
 
     .incident-row {
       display: grid;
-      grid-template-columns: minmax(190px, 1fr) minmax(130px, 180px) 64px;
+      grid-template-columns: minmax(190px, 1fr) minmax(130px, 180px) minmax(82px, 112px) 64px;
       gap: 10px;
       align-items: center;
       padding: 10px 12px;
@@ -391,6 +391,13 @@
       background: var(--priority-color, #f59e0b);
       font-size: 0.74rem;
       font-weight: 800;
+      white-space: nowrap;
+    }
+
+    .incident-evidence {
+      color: var(--muted);
+      font-size: 0.78rem;
+      font-weight: 750;
       white-space: nowrap;
     }
 
@@ -1329,6 +1336,10 @@
         'de 100': 'of 100',
         'Probabilidade por tipicidade de incidente': 'Probability by incident type',
         'Estimativa complementar ao risco geral, baseada nas variáveis pré-jogo, histórico disponível e evidências da busca assistida. Prioridades orientam planejamento operacional e não representam previsão determinística.': 'Complementary estimate to the general risk, based on pre-match variables, available history and assisted-search evidence. Priorities guide operational planning and are not deterministic predictions.',
+        'Índice de evidência externa:': 'External evidence index:',
+        'Evidência externa por tipicidade:': 'External evidence by incident type:',
+        'Estimativa baseada em histórico das equipes, rivalidade, objetos proibidos, conflito torcida x clube, protocolo de policiamento e evidências externas da busca assistida.': 'Estimate based on team history, rivalry, prohibited objects, supporter x club conflict, policing protocol and external evidence from assisted search.',
+        'Estimativa baseada em histórico das equipes, rivalidade, objetos proibidos, conflito torcida x clube, protocolo de policiamento e evidências externas específicas da busca assistida sobre comportamento anterior da torcida/adversário.': 'Estimate based on team history, rivalry, prohibited objects, supporter x club conflict, policing protocol and specific external assisted-search evidence about previous supporter/opponent behavior.',
         'Fatores que mais influenciam o risco': 'Factors with the strongest risk influence',
         'Padrão matemático das variáveis pré-jogo': 'Mathematical pattern of pre-match variables',
         'Variável': 'Variable',
@@ -1457,6 +1468,10 @@
         'de 100': 'de 100',
         'Probabilidade por tipicidade de incidente': 'Probabilidad por tipicidad de incidente',
         'Estimativa complementar ao risco geral, baseada nas variáveis pré-jogo, histórico disponível e evidências da busca assistida. Prioridades orientam planejamento operacional e não representam previsão determinística.': 'Estimación complementaria al riesgo general, basada en variables prepartido, historial disponible y evidencias de la búsqueda asistida. Las prioridades orientan la planificación operativa y no representan predicción determinística.',
+        'Índice de evidência externa:': 'Índice de evidencia externa:',
+        'Evidência externa por tipicidade:': 'Evidencia externa por tipicidad:',
+        'Estimativa baseada em histórico das equipes, rivalidade, objetos proibidos, conflito torcida x clube, protocolo de policiamento e evidências externas da busca assistida.': 'Estimación basada en historial de equipos, rivalidad, objetos prohibidos, conflicto hinchada x club, protocolo policial y evidencias externas de la búsqueda asistida.',
+        'Estimativa baseada em histórico das equipes, rivalidade, objetos proibidos, conflito torcida x clube, protocolo de policiamento e evidências externas específicas da busca assistida sobre comportamento anterior da torcida/adversário.': 'Estimación basada en historial de equipos, rivalidad, objetos prohibidos, conflicto hinchada x club, protocolo policial y evidencias externas específicas de la búsqueda asistida sobre comportamiento anterior de la hinchada/adversario.',
         'Fatores que mais influenciam o risco': 'Factores que más influyen en el riesgo',
         'Padrão matemático das variáveis pré-jogo': 'Patrón matemático de las variables prepartido',
         'Variável': 'Variable',
@@ -1583,7 +1598,8 @@
         return {
           risco: calcularPontuacaoRisco(factors),
           fontes: googleData.items || [],
-          resumo: googleData.summary || 'Consulta concluida sem resumo retornado.'
+          resumo: googleData.summary || 'Consulta concluida sem resumo retornado.',
+          buscaAssistidaConectada: true
         };
       }
     }
@@ -2229,7 +2245,8 @@
         risco,
         fontes: [],
         resumo: `Analise local para ${factors.equipesEnvolvidas} em ${factors.localEvento}. Risco ${nivel}, estimado por ${modelo.modelo.nome.toLowerCase()} com publico, historico pesquisado, rivalidade, tabela, campeonato, dia, meteorologia, conflitos, historico de objetos proibidos, seguranca privada, complexidade do local e sinais nas observacoes.`,
-        detalhes: gerarDetalhesAnalise(factors)
+        detalhes: gerarDetalhesAnalise(factors),
+        buscaAssistidaConectada: false
       };
     }
 
@@ -2514,7 +2531,12 @@
       const deficitSeguranca = Math.max(coberturaPrivada.necessarios - factors.segurancasPrivados, 0);
       const sobraSeguranca = Math.max(factors.segurancasPrivados - coberturaPrivada.necessarios, 0);
       const validacoes = gerarValidacoesOperacionais(factors, modelo);
-      const incidentes = calcularProbabilidadesIncidentes(calcularPontuacaoRisco(factors), modelo, factors);
+      const evidenciaExterna = calcularIndiceEvidenciaExterna({
+        fontes: [],
+        factors,
+        buscaAssistidaConectada: false
+      });
+      const incidentes = calcularProbabilidadesIncidentes(calcularPontuacaoRisco(factors), modelo, factors, evidenciaExterna);
       const prioridadesIncidentes = incidentes
         .filter((incidente) => incidente.probabilidade >= 0.3)
         .slice(0, 3)
@@ -2556,6 +2578,7 @@
         `Cobertura de segurança privada: ${(coberturaPrivada.cobertura * 100).toFixed(0)}%`,
         `Risco por déficit de segurança: ${(variaveis.riscoSeguranca * 100).toFixed(0)}%`,
         `Sinais nas observações: ${(variaveis.sinaisObservacoes * 100).toFixed(0)}%`,
+        `Evidência externa por tipicidade: ${montarResumoEvidenciasTipicidade(evidenciaExterna)}`,
         prioridadesIncidentes.length ? `Tipicidades prioritárias: ${prioridadesIncidentes.join(', ')}` : 'Tipicidades prioritárias: sem prioridade alta automática.',
         `Validações operacionais: ${validacoes.resumo}`
       ];
@@ -2775,7 +2798,9 @@
       const acoesMitigacao = gerarAcoesMitigacao(data.risco, modelo, data.factors);
       const cenarioMitigado = calcularCenarioMitigado(data.factors);
       const fatoresBaixos = montarFatoresBaixaPressao(modelo);
-      const incidentes = calcularProbabilidadesIncidentes(data.risco, modelo, data.factors);
+      const evidenciaExterna = data.evidenciaExterna || calcularIndiceEvidenciaExterna(data);
+      data.evidenciaExterna = evidenciaExterna;
+      const incidentes = calcularProbabilidadesIncidentes(data.risco, modelo, data.factors, evidenciaExterna);
       const planoOperacional = gerarPlanoOperacional(data, modelo, data.factors, cenarioMitigado);
       const validacoesOperacionais = gerarValidacoesOperacionais(data.factors, modelo);
       const linhas = [
@@ -2807,7 +2832,7 @@
           </div>
         </div>
 
-        ${renderProbabilidadesIncidentes(incidentes)}
+        ${renderProbabilidadesIncidentes(incidentes, evidenciaExterna)}
 
         <div class="chart-section">
           <div>
@@ -2926,89 +2951,268 @@
       `;
     }
 
-    function calcularProbabilidadesIncidentes(score, modelo, factors) {
+    function calcularIndiceEvidenciaExterna(data) {
+      const fontes = Array.isArray(data.fontes) ? data.fontes : [];
+      const factors = data.factors || {};
+      const categorias = criarCategoriasEvidenciaExterna();
+      const vazioPorTipicidade = Object.fromEntries(Object.keys(categorias).map((key) => [key, criarEvidenciaTipicidade()]));
+
+      if (!data.buscaAssistidaConectada || !fontes.length) {
+        return {
+          valor: 0,
+          percentual: 0,
+          rotulo: data.buscaAssistidaConectada ? 'sem evidência externa por tipicidade' : 'busca assistida não conectada',
+          resumo: data.buscaAssistidaConectada
+            ? 'A busca assistida não retornou evidências específicas por tipicidade para elevar probabilidades de incidentes.'
+            : 'A busca assistida/Google Custom Search não está conectada nesta execução; os índices externos por tipicidade foram mantidos em 0%.',
+          termos: [],
+          fontesRelevantes: 0,
+          porTipicidade: vazioPorTipicidade
+        };
+      }
+
+      const equipes = separarEquipes(factors.equipesEnvolvidas || '').map(normalizarTexto).filter(Boolean);
+      const local = normalizarTexto(factors.localEvento || '');
+      const textoFontes = fontes.map((fonte) => [
+        fonte.title,
+        fonte.htmlTitle,
+        fonte.snippet,
+        fonte.htmlSnippet,
+        fonte.displayLink,
+        fonte.link
+      ].filter(Boolean).join(' '));
+
+      const termosRecentes = ['hoje', 'ontem', 'semana', 'recente', '2026', '2025', 'ultimas', 'últimas'];
+      const porTipicidade = Object.fromEntries(Object.keys(categorias).map((key) => [key, criarEvidenciaTipicidade()]));
+
+      textoFontes.forEach((textoOriginal) => {
+        const texto = normalizarTexto(textoOriginal);
+        const mencionaEquipe = equipes.some((equipe) => equipe && texto.includes(equipe));
+        const mencionaLocal = local && texto.includes(local.split(' ')[0]);
+        const mencionaRecencia = termosRecentes.some((termo) => texto.includes(normalizarTexto(termo)));
+
+        Object.entries(categorias).forEach(([key, categoria]) => {
+          const termos = categoria.termos.filter((termo) => texto.includes(normalizarTexto(termo)));
+          const contexto = categoria.contexto.filter((termo) => texto.includes(normalizarTexto(termo)));
+          const encontrouCategoria = termos.length && (!categoria.exigeContexto || contexto.length);
+
+          if (!encontrouCategoria) return;
+
+          const evidencia = porTipicidade[key];
+          evidencia.fontesRelevantes += 1;
+          evidencia.sinaisFortes += Math.min(termos.length + contexto.length, 4);
+          if (mencionaRecencia || mencionaEquipe || mencionaLocal) evidencia.sinaisRecentes += 1;
+          termos.forEach((termo) => evidencia.termos.add(termo));
+          contexto.forEach((termo) => evidencia.termos.add(termo));
+        });
+      });
+
+      Object.entries(porTipicidade).forEach(([key, evidencia]) => {
+        const classificada = classificarEvidenciaTipicidade(evidencia, categorias[key].nome);
+        porTipicidade[key] = classificada;
+      });
+
+      const evidencias = Object.values(porTipicidade);
+      const maior = evidencias.reduce((atual, item) => item.valor > atual.valor ? item : atual, criarEvidenciaTipicidade());
+      const fontesRelevantes = evidencias.reduce((total, item) => total + item.fontesRelevantes, 0);
+      const termosEncontrados = new Set(evidencias.flatMap((item) => item.termos || []));
+
+      return {
+        valor: maior.valor || 0,
+        percentual: Math.round((maior.valor || 0) * 100),
+        rotulo: maior.valor ? `maior evidência: ${maior.nome}` : 'sem evidência externa por tipicidade',
+        resumo: `Evidência externa aplicada por tipicidade, sem sobrepor variáveis da regressão. Fontes/categorias relevantes: ${fontesRelevantes}. Termos identificados: ${Array.from(termosEncontrados).slice(0, 8).join(', ') || 'sem termos críticos'}.`,
+        termos: Array.from(termosEncontrados),
+        fontesRelevantes,
+        porTipicidade
+      };
+    }
+
+    function criarCategoriasEvidenciaExterna() {
+      return {
+        brigaEntorno: {
+          nome: 'Briga de torcidas no entorno',
+          termos: ['briga', 'confronto', 'tumulto', 'confusao', 'violencia'],
+          contexto: ['entorno', 'fora', 'rua', 'arredores', 'estacao', 'metrô', 'metro', 'terminal'],
+          exigeContexto: true
+        },
+        arremessoObjetos: {
+          nome: 'Arremesso de objetos',
+          termos: ['arremesso', 'arremessou', 'atirou', 'jogou', 'lancou', 'lançou'],
+          contexto: ['objeto', 'objetos', 'garrafa', 'pedra', 'copo'],
+          exigeContexto: true
+        },
+        sinalizadores: {
+          nome: 'Uso de sinalizadores',
+          termos: ['sinalizador', 'sinalizadores', 'flare', 'pirotecnia', 'fogos', 'rojão', 'rojao'],
+          contexto: [],
+          exigeContexto: false
+        },
+        brigaInterna: {
+          nome: 'Briga de torcida na área interna',
+          termos: ['briga', 'confronto', 'tumulto', 'confusao', 'violencia'],
+          contexto: ['estadio', 'estádio', 'arquibancada', 'setor', 'interna', 'dentro'],
+          exigeContexto: true
+        },
+        objetosPerfurocortantes: {
+          nome: 'Ingresso de objetos perfurocortantes',
+          termos: ['faca', 'facas', 'canivete', 'arma branca', 'perfurocortante', 'cortante'],
+          contexto: [],
+          exigeContexto: false
+        },
+        danosEstrutura: {
+          nome: 'Danos à estrutura do estádio',
+          termos: ['depredacao', 'depredação', 'dano', 'danos', 'quebrou', 'quebraram'],
+          contexto: ['vidro', 'cadeira', 'arquibancada', 'patrimonio', 'patrimônio', 'estrutura', 'estadio', 'estádio'],
+          exigeContexto: true
+        },
+        invasaoCampo: {
+          nome: 'Invasão de campo',
+          termos: ['invasao', 'invasão', 'invadiu', 'invadir'],
+          contexto: ['campo', 'gramado'],
+          exigeContexto: true
+        }
+      };
+    }
+
+    function criarEvidenciaTipicidade() {
+      return {
+        valor: 0,
+        percentual: 0,
+        rotulo: 'sem evidência externa',
+        nome: '',
+        termos: new Set(),
+        fontesRelevantes: 0,
+        sinaisFortes: 0,
+        sinaisRecentes: 0
+      };
+    }
+
+    function classificarEvidenciaTipicidade(evidencia, nome) {
+      let valor = 0;
+      let rotulo = 'sem evidência externa';
+
+      if (evidencia.fontesRelevantes >= 1) {
+        valor = 0.05;
+        rotulo = 'menções fracas ou antigas';
+      }
+
+      if (evidencia.fontesRelevantes >= 2 || evidencia.sinaisFortes >= 5) {
+        valor = evidencia.sinaisRecentes >= 1 ? 0.2 : 0.12;
+        rotulo = 'notícias com incidentes semelhantes';
+      }
+
+      if (evidencia.sinaisRecentes >= 2 && evidencia.fontesRelevantes >= 2) {
+        valor = Math.min(0.3, 0.22 + (Math.min(evidencia.sinaisRecentes, 4) * 0.02));
+        rotulo = 'ocorrência recente/aderente à tipicidade';
+      }
+
+      return {
+        ...evidencia,
+        valor,
+        percentual: Math.round(valor * 100),
+        rotulo,
+        nome,
+        termos: Array.from(evidencia.termos || [])
+      };
+    }
+
+    function calcularProbabilidadesIncidentes(score, modelo, factors, evidenciaExterna = { valor: 0 }) {
       const v = modelo.variaveis;
       const riscoGeral = limitarNumero(score / 100, 0, 1);
-      const evidenciaExterna = limitarNumero((v.historicoEquipes * 0.5) + (v.sinaisObservacoes * 0.5), 0, 1);
+      const evidenciaPorTipicidade = evidenciaExterna.porTipicidade || {};
       const tensaoTorcida = limitarNumero((v.rivalidadeEquipes * 0.45) + (v.conflitoTorcidaClube * 0.35) + (v.historicoEquipes * 0.2), 0, 1);
       const filtroFragil = limitarNumero((v.protocoloPoliciamento * 0.38) + (v.riscoSeguranca * 0.32) + (v.historicoObjetosProibidos * 0.3), 0, 1);
       const jogoSensivel = limitarNumero((v.posicaoTabela * 0.34) + (v.tipoCampeonato * 0.3) + (v.publico * 0.22) + (v.horarioPartida * 0.14), 0, 1);
 
       const incidentes = [
         {
+          key: 'brigaEntorno',
           tipo: 'Briga de torcidas no entorno',
           probabilidade: probabilidadeTipicidade(riscoGeral, [
             [tensaoTorcida, 0.32],
             [v.complexidadeLocal, 0.18],
             [v.alcoolLiberado, 0.12],
             [v.horarioPartida, 0.08],
-            [evidenciaExterna, 0.1]
+            [valorEvidenciaTipicidade(evidenciaPorTipicidade, 'brigaEntorno'), 1]
           ]),
           foco: 'Separação de fluxos, barreiras, escolta e monitoramento de chegada/dispersão.'
         },
         {
+          key: 'arremessoObjetos',
           tipo: 'Arremesso de objetos',
           probabilidade: probabilidadeTipicidade(riscoGeral, [
             [v.historicoObjetosProibidos, 0.28],
             [tensaoTorcida, 0.22],
             [jogoSensivel, 0.12],
             [v.sinaisObservacoes, 0.1],
-            [filtroFragil, 0.08]
+            [filtroFragil, 0.08],
+            [valorEvidenciaTipicidade(evidenciaPorTipicidade, 'arremessoObjetos'), 1]
           ]),
           foco: 'Revista, controle de itens autorizados, vigilância de setores sensíveis e resposta rápida.'
         },
         {
+          key: 'sinalizadores',
           tipo: 'Uso de sinalizadores',
           probabilidade: probabilidadeTipicidade(riscoGeral, [
             [v.historicoObjetosProibidos, 0.3],
             [filtroFragil, 0.22],
             [v.historicoEquipes, 0.12],
             [v.sinaisObservacoes, 0.08],
-            [v.publico, 0.08]
+            [v.publico, 0.08],
+            [valorEvidenciaTipicidade(evidenciaPorTipicidade, 'sinalizadores'), 1]
           ]),
           foco: 'Inspeção de materiais de torcida, bandeiras, instrumentos, mochilas e pontos de concentração.'
         },
         {
+          key: 'brigaInterna',
           tipo: 'Briga de torcida na área interna',
           probabilidade: probabilidadeTipicidade(riscoGeral, [
             [tensaoTorcida, 0.28],
             [v.publico, 0.16],
             [v.riscoSeguranca, 0.14],
             [v.alcoolLiberado, 0.1],
-            [v.torcidaUnica <= 0.2 ? 0.25 : v.torcidaUnica, 0.06]
+            [v.torcidaUnica <= 0.2 ? 0.25 : v.torcidaUnica, 0.06],
+            [valorEvidenciaTipicidade(evidenciaPorTipicidade, 'brigaInterna'), 1]
           ]),
           foco: 'Setorização, resposta rápida, monitoramento por câmeras e presença nos pontos de separação.'
         },
         {
+          key: 'objetosPerfurocortantes',
           tipo: 'Ingresso de objetos perfurocortantes',
           probabilidade: probabilidadeTipicidade(riscoGeral, [
             [v.historicoObjetosProibidos, 0.34],
             [filtroFragil, 0.28],
             [v.publico, 0.08],
             [v.sinaisObservacoes, 0.08],
-            [v.rivalidadeEquipes, 0.06]
+            [v.rivalidadeEquipes, 0.06],
+            [valorEvidenciaTipicidade(evidenciaPorTipicidade, 'objetosPerfurocortantes'), 1]
           ]),
           foco: 'Revista técnica, triagem de volumes, detector manual quando disponível e registro de achados.'
         },
         {
+          key: 'danosEstrutura',
           tipo: 'Danos à estrutura do estádio',
           probabilidade: probabilidadeTipicidade(riscoGeral, [
             [tensaoTorcida, 0.24],
             [v.conflitoTorcidaClube, 0.2],
             [v.publico, 0.14],
             [v.sinaisObservacoes, 0.1],
-            [jogoSensivel, 0.06]
+            [jogoSensivel, 0.06],
+            [valorEvidenciaTipicidade(evidenciaPorTipicidade, 'danosEstrutura'), 1]
           ]),
           foco: 'Proteção de vidros, divisórias, cadeiras, setores de transição e equipes de contenção patrimonial.'
         },
         {
+          key: 'invasaoCampo',
           tipo: 'Invasão de campo',
           probabilidade: probabilidadeTipicidade(riscoGeral, [
             [jogoSensivel, 0.3],
             [v.conflitoTorcidaClube, 0.18],
             [v.riscoSeguranca, 0.16],
             [v.publico, 0.1],
-            [v.sinaisObservacoes, 0.08]
+            [v.sinaisObservacoes, 0.08],
+            [valorEvidenciaTipicidade(evidenciaPorTipicidade, 'invasaoCampo'), 1]
           ]),
           foco: 'Proteção de campo, barreiras, stewarding no perímetro e resposta a gatilhos de placar/arbitragem.'
         }
@@ -3017,10 +3221,15 @@
       return incidentes
         .map((incidente) => ({
           ...incidente,
+          evidenciaExterna: evidenciaPorTipicidade[incidente.key] || criarEvidenciaTipicidade(),
           percentual: Math.round(incidente.probabilidade * 100),
           prioridade: classificarPrioridadeIncidente(incidente.probabilidade)
         }))
         .sort((a, b) => b.percentual - a.percentual);
+    }
+
+    function valorEvidenciaTipicidade(evidenciaPorTipicidade, key) {
+      return limitarNumero(evidenciaPorTipicidade[key]?.valor || 0, 0, 0.3);
     }
 
     function probabilidadeTipicidade(riscoGeral, componentes) {
@@ -3045,7 +3254,7 @@
       return { rotulo: 'Baixa', cor: '#16a34a' };
     }
 
-    function renderProbabilidadesIncidentes(incidentes) {
+    function renderProbabilidadesIncidentes(incidentes, evidenciaExterna) {
       const prioridades = incidentes
         .filter((incidente) => incidente.probabilidade >= 0.3)
         .slice(0, 3)
@@ -3055,6 +3264,8 @@
         <div class="incident-panel">
           <h3>Probabilidade por tipicidade de incidente</h3>
           <p class="incident-note">Estimativa complementar ao risco geral, baseada nas variáveis pré-jogo, histórico disponível e evidências da busca assistida. Prioridades orientam planejamento operacional e não representam previsão determinística.</p>
+          <p class="incident-note"><strong>Evidência externa por tipicidade:</strong> ${escaparHTML(montarResumoEvidenciasTipicidade(evidenciaExterna))}. ${escaparHTML(evidenciaExterna.resumo)}</p>
+          <p class="incident-note">Estimativa baseada em histórico das equipes, rivalidade, objetos proibidos, conflito torcida x clube, protocolo de policiamento e evidências externas específicas da busca assistida sobre comportamento anterior da torcida/adversário.</p>
           ${prioridades.length ? `<p class="incident-note"><strong>Prioridades de atenção da segurança:</strong> ${escaparHTML(prioridades.join(', '))}.</p>` : '<p class="incident-note"><strong>Prioridades de atenção da segurança:</strong> manter monitoramento preventivo das tipicidades listadas.</p>'}
           <div class="incident-list">
             ${incidentes.map((incidente) => renderIncidentePrioritario(incidente)).join('')}
@@ -3068,9 +3279,20 @@
         <div class="incident-row" style="--priority-color: ${incidente.prioridade.cor};">
           <strong>${escaparHTML(incidente.tipo)}</strong>
           <span class="priority-badge">${escaparHTML(incidente.prioridade.rotulo)}</span>
+          <span class="incident-evidence">Ext. ${incidente.evidenciaExterna?.percentual || 0}%</span>
           <strong>${incidente.percentual}%</strong>
         </div>
       `;
+    }
+
+    function montarResumoEvidenciasTipicidade(evidenciaExterna) {
+      const itens = Object.values(evidenciaExterna?.porTipicidade || {})
+        .filter((item) => (item.percentual || 0) > 0)
+        .sort((a, b) => b.percentual - a.percentual)
+        .slice(0, 4)
+        .map((item) => `${item.nome}: ${item.percentual}%`);
+
+      return itens.length ? itens.join('; ') : evidenciaExterna?.rotulo || 'sem evidência externa por tipicidade';
     }
 
     async function gerarPDFAnalise() {
@@ -3144,7 +3366,8 @@
       const reforco = data.risco >= 70 ? 1.2 : data.risco >= 50 ? 1.1 : 1;
       const efetivoRecomendado = Math.ceil(efetivoBase * reforco);
       const variaveis = modelo.variaveis;
-      const incidentesPrioritarios = calcularProbabilidadesIncidentes(data.risco, modelo, factors)
+      const evidenciaExterna = data.evidenciaExterna || calcularIndiceEvidenciaExterna(data);
+      const incidentesPrioritarios = calcularProbabilidadesIncidentes(data.risco, modelo, factors, evidenciaExterna)
         .filter((incidente) => incidente.probabilidade >= 0.3)
         .slice(0, 3);
       const nomesIncidentesPrioritarios = incidentesPrioritarios.map((incidente) => incidente.tipo).join(', ');
@@ -3187,6 +3410,8 @@
         resumo: data.resumo,
         fontes: data.fontes || [],
         detalhes: data.detalhes || [],
+        evidenciaExterna: data.evidenciaExterna || null,
+        buscaAssistidaConectada: Boolean(data.buscaAssistidaConectada),
         factors: data.factors
       };
 
@@ -3752,7 +3977,7 @@
         }
 
         .report-content .incident-row {
-          grid-template-columns: minmax(0, 1fr) 74px 38px;
+          grid-template-columns: minmax(0, 1fr) 70px 48px 34px;
           gap: 5px;
           padding: 6px 7px;
           font-size: 0.68rem;
@@ -3760,6 +3985,10 @@
 
         .report-content .priority-badge {
           padding: 3px 5px;
+          font-size: 0.58rem;
+        }
+
+        .report-content .incident-evidence {
           font-size: 0.58rem;
         }
 

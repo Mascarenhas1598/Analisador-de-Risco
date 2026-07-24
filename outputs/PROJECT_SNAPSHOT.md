@@ -33,6 +33,10 @@ Estado ancorado em `PROJECT_ANCHOR.md`.
 - Painel "Probabilidade por tipicidade de incidente" incluido logo abaixo do risco geral, exibindo percentuais estimados e destacando prioridades de atencao da seguranca.
 - Tipicidades avaliadas: invasao de campo, arremesso de objetos, uso de sinalizadores, ingresso de objetos perfurocortantes, briga de torcidas no entorno, briga de torcida na area interna e danos a estrutura do estadio.
 - As probabilidades por tipicidade sao modulo complementar ao risco geral: usam variaveis pre-jogo, historico disponivel e evidencias da busca assistida, sem substituir a regressao logistica principal.
+- Busca assistida agora gera evidencia externa por tipicidade, exibida em cada linha do painel de incidentes como "Ext. X%", sem criar um indice unico que infle todas as ocorrencias.
+- A evidencia externa e aplicada apenas ao tipo de incidente compatível com as fontes retornadas: briga no entorno, arremesso de objetos, sinalizadores, objetos perfurocortantes, briga interna, danos estruturais ou invasao de campo.
+- Classificacao da evidencia externa revisada para exigir contexto nas categorias com maior risco de sobreposicao, como briga no entorno, briga interna, arremesso de objetos e dano estrutural.
+- Quando Google Custom Search nao estiver conectado ou nao houver fontes relevantes para aquela tipicidade, o indice externo da categoria fica em 0% e o sistema informa isso no resultado.
 - Plano operacional passou a incorporar as tipicidades prioritarias nos pontos criticos e nas acoes obrigatorias.
 - Resumo de acoes recomendadas para mitigacao gerado apos a analise, organizado por fase do espetaculo esportivo.
 - Plano operacional recomendado incluido no resultado e no PDF, com decisao operacional, nivel de resposta, efetivo recomendado, pontos criticos e acoes obrigatorias.
