@@ -51,6 +51,9 @@ Estado ancorado em `PROJECT_ANCHOR.md`.
 - Locais reconhecidos para meteorologia: Arena Fonte Nova/Fonte Nova, Barradao/Manoel Barradas, Pituacu e fallback Salvador-BA.
 - Meteorologia corrigida com fallback automatico: se a data estiver fora da janela do Open-Meteo ou a consulta externa falhar, o sistema retorna estimativa climatica local de Salvador por mes, identificada como `estimativa-local`.
 - Estimativa automatica de publico incluida: usa equipes, local, capacidade do estadio, historico/rivalidade, campeonato, dia da semana, tabela e meteorologia para sugerir publico estimado.
+- Campo "Capacidade maxima declarada" incluido abaixo de "Local do evento", preenchido automaticamente pelo nome do estadio.
+- API `POST /api/capacidade-local` incluida: usa base local para estadios conhecidos e busca assistida/Google Custom Search quando configurado para apoiar capacidade maxima declarada e media historica operacional estimada.
+- Estimativa de publico passou a usar capacidade maxima declarada e media historica operacional estimada do local como base, recebendo ajustes por equipes, historico, rivalidade, campeonato, dia, horario, clima, tabela, alcool e torcida unica.
 - Efetivo de seguranca privada automatizado pela referencia 1/100: calcula minimo recomendado, deficit ou sobra operacional e alimenta a analise final.
 - Campo "Dia de semana" preenchido automaticamente a partir da data do jogo.
 - Novas variaveis pre-jogo incluidas no formulario e na regressao com pesos conservadores: horario da partida, mandante, venda/liberacao de alcool, JECRIM, torcida unica e protocolo de policiamento.

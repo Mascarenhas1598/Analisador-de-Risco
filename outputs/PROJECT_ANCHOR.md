@@ -22,6 +22,8 @@ Estado ancorado como versao atual do **Analisador de Risco - NM Engenharia e Con
 - Meteorologia automatica por previsao do tempo do dia da partida via Open-Meteo, preenchendo a variavel meteorologia.
 - Fallback de meteorologia por estimativa climatica local quando Open-Meteo estiver indisponivel ou a data estiver fora da janela de previsao.
 - Publico estimado automaticamente por jogo/local/contexto e efetivo privado recomendado automaticamente pela referencia 1/100.
+- Campo `capacidadeMaximaDeclarada` incluido e preenchido automaticamente a partir do local do evento, com apoio de busca assistida quando Google Custom Search estiver conectado.
+- Estimativa de publico passou a usar capacidade maxima declarada e media historica operacional estimada do local, alem de equipes, campeonato, rivalidade, tabela, clima e contexto.
 - Dia de semana preenchido automaticamente pela data do jogo.
 - Variaveis pre-jogo da base geral incluidas com impacto conservador na regressao: horario, mandante, alcool, JECRIM, torcida unica e protocolo de policiamento.
 - Variavel pre-jogo `historicoObjetosProibidos` incluida em padrao matematico 0 a 1, com coeficientes conservadores nos modelos geral, Bahia geral e Ba-Vi.

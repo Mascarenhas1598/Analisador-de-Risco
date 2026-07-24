@@ -51,6 +51,11 @@ const server = http.createServer(async (request, response) => {
       return;
     }
 
+    if (request.method === 'POST' && request.url === '/api/capacidade-local') {
+      await handleCapacidadeLocal(request, response);
+      return;
+    }
+
     if (request.method === 'GET' || request.method === 'HEAD') {
       await serveStatic(request, response);
       return;
@@ -207,6 +212,72 @@ async function handlePrevisaoTempo(request, response) {
   }
 }
 
+async function handleCapacidadeLocal(request, response) {
+  const body = await readJSON(request);
+  const localEvento = String(body.localEvento || '').trim();
+
+  if (!localEvento) {
+    sendJSON(response, 400, { error: 'Informe o local do evento.' });
+    return;
+  }
+
+  const fallback = calcularCapacidadeLocalServidor(localEvento);
+
+  if (!GOOGLE_API_KEY || !GOOGLE_CSE_ID) {
+    sendJSON(response, 200, {
+      ...fallback,
+      origem: 'local-sem-google',
+      resumo: `${fallback.nome}: capacidade máxima declarada estimada em ${fallback.capacidade.toLocaleString('pt-BR')} e média histórica operacional estimada em ${fallback.mediaPublico.toLocaleString('pt-BR')}. Google Custom Search não conectado.`
+    });
+    return;
+  }
+
+  const query = `${localEvento} estadio capacidade maxima media publico jogos futebol`;
+  const searchURL = new URL('https://www.googleapis.com/customsearch/v1');
+  searchURL.searchParams.set('key', GOOGLE_API_KEY);
+  searchURL.searchParams.set('cx', GOOGLE_CSE_ID);
+  searchURL.searchParams.set('q', query);
+  searchURL.searchParams.set('num', '5');
+  searchURL.searchParams.set('lr', 'lang_pt');
+
+  try {
+    const googleResponse = await fetch(searchURL);
+
+    if (!googleResponse.ok) {
+      sendJSON(response, 200, {
+        ...fallback,
+        origem: 'local-fallback-google',
+        resumo: `${fallback.nome}: capacidade/média estimadas localmente porque a consulta Google falhou com status ${googleResponse.status}.`
+      });
+      return;
+    }
+
+    const data = await googleResponse.json();
+    const items = Array.isArray(data.items) ? data.items : [];
+    const capacidadePesquisa = extrairCapacidadeDeResultados(items);
+    const capacidade = capacidadePesquisa || fallback.capacidade;
+    const mediaPublico = fallback.mediaPublico || Math.round(capacidade * 0.55);
+
+    sendJSON(response, 200, {
+      nome: fallback.nome,
+      capacidade,
+      mediaPublico,
+      origem: capacidadePesquisa ? 'google-custom-search' : 'local-com-busca-assistida',
+      resumo: `${fallback.nome}: capacidade máxima declarada ${capacidade.toLocaleString('pt-BR')}; média histórica operacional estimada ${mediaPublico.toLocaleString('pt-BR')}. Busca assistida retornou ${items.length} resultado(s).`,
+      links: items.map((item) => ({
+        label: item.title || item.displayLink || 'Resultado',
+        url: item.link
+      })).filter((item) => item.url)
+    });
+  } catch (error) {
+    sendJSON(response, 200, {
+      ...fallback,
+      origem: 'local-fallback-google',
+      resumo: `${fallback.nome}: capacidade/média estimadas localmente porque a busca assistida ficou indisponível.`
+    });
+  }
+}
+
 async function serveStatic(request, response) {
   const url = new URL(request.url, `http://${request.headers.host}`);
   const pathname = decodeURIComponent(url.pathname === '/' ? '/index.html' : url.pathname);
@@ -263,6 +334,50 @@ function criarHistoricoLocal(query, origem) {
       { label: 'Incidentes de torcida', url: `https://www.google.com/search?q=${encodeURIComponent(`${query} incidentes torcida seguranca estadio`)}` }
     ]
   };
+}
+
+function calcularCapacidadeLocalServidor(localEvento) {
+  const texto = normalizarTexto(localEvento || '');
+
+  if (texto.includes('barradao') || texto.includes('manoel barradas')) {
+    return { nome: 'Barradão', capacidade: 30336, mediaPublico: 15000 };
+  }
+
+  if (texto.includes('pituacu')) {
+    return { nome: 'Pituaçu', capacidade: 32157, mediaPublico: 12000 };
+  }
+
+  if (texto.includes('arena') || texto.includes('fonte nova')) {
+    return { nome: 'Arena Fonte Nova', capacidade: 47907, mediaPublico: 28000 };
+  }
+
+  return { nome: localEvento || 'local informado', capacidade: 40000, mediaPublico: 18000 };
+}
+
+function extrairCapacidadeDeResultados(items) {
+  const candidatos = [];
+
+  items.forEach((item) => {
+    const texto = normalizarTexto([
+      item.title,
+      item.htmlTitle,
+      item.snippet,
+      item.htmlSnippet
+    ].filter(Boolean).join(' '));
+
+    if (!/(capacidade|lugares|torcedores|publico|público)/.test(texto)) return;
+
+    const matches = texto.match(/\b\d{2,3}(?:[.\s]\d{3})\b|\b\d{5,6}\b/g) || [];
+    matches.forEach((match) => {
+      const numero = Number(match.replace(/\D/g, ''));
+      if (numero >= 8000 && numero <= 120000) candidatos.push(numero);
+    });
+  });
+
+  if (!candidatos.length) return 0;
+
+  candidatos.sort((a, b) => b - a);
+  return candidatos[0];
 }
 
 function estimarHistoricoLocal(equipes, query) {

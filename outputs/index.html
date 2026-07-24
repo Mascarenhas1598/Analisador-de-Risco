@@ -997,6 +997,17 @@
           </div>
 
           <div class="field">
+            <label for="capacidadeMaximaDeclarada">Capacidade máxima declarada</label>
+            <input id="capacidadeMaximaDeclarada" name="capacidadeMaximaDeclarada" type="number" min="0" step="1" readonly>
+            <input id="mediaPublicoLocal" name="mediaPublicoLocal" type="hidden" value="">
+            <input id="capacidadeLocalFonte" name="capacidadeLocalFonte" type="hidden" value="">
+            <div class="history-tools">
+              <p id="capacidadeLocalStatus" class="muted">Informe o local do evento para preencher capacidade e média histórica estimada.</p>
+              <button id="venueCapacityButton" class="button button-secondary button-small" type="button">Atualizar capacidade</button>
+            </div>
+          </div>
+
+          <div class="field">
             <label for="dataJogo">Data</label>
             <input id="dataJogo" name="dataJogo" type="date">
           </div>
@@ -1272,6 +1283,9 @@
         'Informe as equipes para pesquisar histórico, confrontos, rivalidade e incidentes.': 'Enter the teams to search history, matchups, rivalry and incidents.',
         'Pesquisar histórico': 'Search history',
         'Local do evento': 'Event venue',
+        'Capacidade máxima declarada': 'Declared maximum capacity',
+        'Informe o local do evento para preencher capacidade e média histórica estimada.': 'Enter the event venue to fill capacity and estimated historical average.',
+        'Atualizar capacidade': 'Update capacity',
         'Data': 'Date',
         'Público estimado': 'Estimated attendance',
         'Pode ser estimado automaticamente pelo jogo, local e contexto.': 'Can be estimated automatically from match, venue and context.',
@@ -1409,6 +1423,9 @@
         'Informe as equipes para pesquisar histórico, confrontos, rivalidade e incidentes.': 'Informe los equipos para buscar historial, enfrentamientos, rivalidad e incidentes.',
         'Pesquisar histórico': 'Buscar historial',
         'Local do evento': 'Lugar del evento',
+        'Capacidade máxima declarada': 'Capacidad máxima declarada',
+        'Informe o local do evento para preencher capacidade e média histórica estimada.': 'Informe el lugar del evento para completar capacidad y promedio histórico estimado.',
+        'Atualizar capacidade': 'Actualizar capacidad',
         'Data': 'Fecha',
         'Público estimado': 'Público estimado',
         'Pode ser estimado automaticamente pelo jogo, local e contexto.': 'Puede estimarse automáticamente según partido, lugar y contexto.',
@@ -1934,6 +1951,59 @@
       document.getElementById('historicoEquipesResultado').classList.add('hidden');
     }
 
+    async function atualizarCapacidadeLocal({ silencioso = false } = {}) {
+      const localEvento = document.getElementById('localEvento').value.trim();
+      const status = document.getElementById('capacidadeLocalStatus');
+
+      if (!localEvento) {
+        preencherCapacidadeLocal({ capacidade: 0, mediaPublico: 0, resumo: 'Informe o local do evento para preencher capacidade e média histórica estimada.', origem: 'vazio' });
+        return null;
+      }
+
+      status.textContent = 'Consultando capacidade e média histórica estimada do local...';
+
+      try {
+        const response = await fetch('/api/capacidade-local', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${getAuthToken()}`
+          },
+          body: JSON.stringify({ localEvento })
+        });
+
+        if (!response.ok) {
+          throw new Error(`Falha na consulta de capacidade: ${response.status}`);
+        }
+
+        const data = await response.json();
+        preencherCapacidadeLocal(data);
+        estimarPublicoAutomatico({ somenteSeVazio: true, origem: 'capacidade' });
+        if (!silencioso) mostrarNotificacao('Capacidade do local atualizada.', 'sucesso');
+        return data;
+      } catch (error) {
+        const fallback = calcularCapacidadeLocal(localEvento);
+        preencherCapacidadeLocal({
+          capacidade: fallback.valor,
+          mediaPublico: fallback.mediaPublico || Math.round(fallback.valor * 0.58),
+          nome: fallback.nome,
+          origem: 'local-fallback',
+          resumo: `Capacidade estimada localmente para ${fallback.nome}. Busca assistida indisponível nesta execução.`
+        });
+        estimarPublicoAutomatico({ somenteSeVazio: true, origem: 'capacidade' });
+        return null;
+      }
+    }
+
+    function preencherCapacidadeLocal(data) {
+      const capacidade = Math.max(Number(data.capacidade || data.valor || 0), 0);
+      const mediaPublico = Math.max(Number(data.mediaPublico || 0), 0);
+      document.getElementById('capacidadeMaximaDeclarada').value = capacidade ? String(capacidade) : '';
+      document.getElementById('mediaPublicoLocal').value = mediaPublico ? String(mediaPublico) : '';
+      document.getElementById('capacidadeLocalFonte').value = data.resumo || '';
+      document.getElementById('capacidadeLocalStatus').textContent = data.resumo || 'Capacidade do local não identificada.';
+    }
+
     function estimarPublicoAutomatico({ somenteSeVazio = false, origem = 'manual' } = {}) {
       const input = document.getElementById('publicoEstimado');
       const status = document.getElementById('publicoEstimadoStatus');
@@ -1968,6 +2038,9 @@
       return {
         equipes: document.getElementById('equipesEnvolvidas').value,
         localEvento: document.getElementById('localEvento').value,
+        capacidadeMaximaDeclarada: Number(document.getElementById('capacidadeMaximaDeclarada').value || 0),
+        mediaPublicoLocal: Number(document.getElementById('mediaPublicoLocal').value || 0),
+        capacidadeLocalFonte: document.getElementById('capacidadeLocalFonte').value,
         tipoCampeonato: document.getElementById('tipoCampeonato').value,
         diaSemana: document.getElementById('diaSemana').value,
         horarioPartida: document.getElementById('horarioPartida').value,
@@ -1981,7 +2054,12 @@
     }
 
     function calcularEstimativaPublico(contexto) {
-      const capacidade = calcularCapacidadeLocal(contexto.localEvento);
+      const capacidadeBase = calcularCapacidadeLocal(contexto.localEvento);
+      const capacidade = {
+        ...capacidadeBase,
+        valor: Number(contexto.capacidadeMaximaDeclarada || capacidadeBase.valor || 0),
+        mediaPublico: Number(contexto.mediaPublicoLocal || capacidadeBase.mediaPublico || 0)
+      };
       const equipes = separarEquipes(contexto.equipes || '').map(normalizarNomeEquipe);
 
       if (!capacidade.valor || equipes.length < 2) {
@@ -1994,9 +2072,10 @@
       const historico = limitarNumero(contexto.historicoEquipesScore || 0, 0, 1);
       const rivalidade = limitarNumero(contexto.rivalidadeEquipes || 0, 0, 1);
       const tabela = limitarNumero(contexto.posicaoTabela || 0, 0, 1);
-      let ocupacao = 0.42;
+      const ocupacaoMediaLocal = capacidade.mediaPublico ? limitarNumero(capacidade.mediaPublico / capacidade.valor, 0.18, 0.92) : 0.42;
+      let ocupacao = ocupacaoMediaLocal;
 
-      if (envolveBahia) ocupacao = 0.58;
+      if (envolveBahia) ocupacao = Math.max(ocupacao, 0.58);
       if (bavi) ocupacao = 0.9;
       if (historico >= 0.7 || rivalidade >= 0.7) ocupacao = Math.max(ocupacao, 0.82);
       if (historico >= 0.45 || rivalidade >= 0.45) ocupacao = Math.max(ocupacao, 0.66);
@@ -2042,7 +2121,9 @@
 
       const ocupacaoFinal = limitarNumero(ocupacao, 0.22, 0.98);
       const valor = arredondarParaBase(capacidade.valor * ocupacaoFinal, 500);
-      const resumo = `Estimativa automática: ${valor.toLocaleString('pt-BR')} torcedores (${Math.round(ocupacaoFinal * 100)}% da capacidade de ${capacidade.nome}).`;
+      const mediaTexto = capacidade.mediaPublico ? ` média histórica estimada de ${capacidade.mediaPublico.toLocaleString('pt-BR')};` : '';
+      const origemCapacidade = contexto.capacidadeLocalFonte ? ` Fonte: ${contexto.capacidadeLocalFonte}` : '';
+      const resumo = `Estimativa automática: ${valor.toLocaleString('pt-BR')} torcedores (${Math.round(ocupacaoFinal * 100)}% da capacidade declarada de ${capacidade.valor.toLocaleString('pt-BR')} em ${capacidade.nome};${mediaTexto}${origemCapacidade}`.replace('; ', '; ');
 
       return { valor, resumo, capacidade: capacidade.valor, ocupacao: ocupacaoFinal };
     }
@@ -2052,16 +2133,16 @@
 
       if (!texto) return { valor: 0, nome: 'local não informado' };
       if (texto.includes('barradao') || texto.includes('manoel barradas')) {
-        return { valor: 30336, nome: 'Barradão' };
+        return { valor: 30336, nome: 'Barradão', mediaPublico: 15000 };
       }
       if (texto.includes('pituacu')) {
-        return { valor: 32157, nome: 'Pituaçu' };
+        return { valor: 32157, nome: 'Pituaçu', mediaPublico: 12000 };
       }
       if (texto.includes('arena') || texto.includes('fonte nova')) {
-        return { valor: 47907, nome: 'Arena Fonte Nova' };
+        return { valor: 47907, nome: 'Arena Fonte Nova', mediaPublico: 28000 };
       }
 
-      return { valor: 40000, nome: 'local informado' };
+      return { valor: 40000, nome: 'local informado', mediaPublico: 18000 };
     }
 
     function arredondarParaBase(value, base) {
@@ -2347,6 +2428,8 @@
 
       [
         'publicoEstimado',
+        'capacidadeMaximaDeclarada',
+        'mediaPublicoLocal',
         'historicoEquipesScore',
         'rivalidadeEquipes',
         'posicaoTabela',
@@ -2587,6 +2670,8 @@
           ? 'Observação metodológica: modelo Bahia geral usa recorte não Ba-Vi da base-mãe para não diluir o comportamento específico do clássico.'
           : 'Coeficientes: iniciais e calibráveis; devem ser treinados com base histórica real para validação estatística.',
         `Público: ${factors.publicoEstimado.toLocaleString('pt-BR')}`,
+        factors.capacidadeMaximaDeclarada ? `Capacidade máxima declarada: ${factors.capacidadeMaximaDeclarada.toLocaleString('pt-BR')}` : 'Capacidade máxima declarada: não registrada.',
+        factors.mediaPublicoLocal ? `Média histórica estimada do local: ${factors.mediaPublicoLocal.toLocaleString('pt-BR')}` : 'Média histórica estimada do local: não registrada.',
         factors.publicoEstimadoFonte ? `Base da estimativa de público: ${factors.publicoEstimadoFonte}` : 'Base da estimativa de público: informado manualmente.',
         `Histórico pesquisado: ${(factors.historicoEquipesScore * 100).toFixed(0)}%`,
         `Rivalidade: ${(factors.rivalidadeEquipes * 100).toFixed(0)}%`,
@@ -3522,9 +3607,16 @@
     }
 
     function preencherFormularioComFatores(factors) {
+      const hiddenPermitidos = new Set([
+        'publicoEstimadoFonte',
+        'segurancasRecomendados',
+        'mediaPublicoLocal',
+        'capacidadeLocalFonte'
+      ]);
+
       Object.entries(factors || {}).forEach(([key, value]) => {
         const input = document.getElementById(key);
-        if (!input || (input.type === 'hidden' && key !== 'publicoEstimadoFonte' && key !== 'segurancasRecomendados')) return;
+        if (!input || (input.type === 'hidden' && !hiddenPermitidos.has(key))) return;
         input.value = value;
       });
       if (factors?.historicoEquipesScore !== undefined) {
@@ -4672,11 +4764,14 @@
       document.getElementById('historySearchButton').addEventListener('click', pesquisarHistoricoEquipes);
       document.getElementById('weatherSearchButton').addEventListener('click', () => atualizarPrevisaoMeteorologica());
       document.getElementById('publicEstimateButton').addEventListener('click', () => estimarPublicoAutomatico());
+      document.getElementById('venueCapacityButton').addEventListener('click', () => atualizarCapacidadeLocal());
       document.getElementById('securityEstimateButton').addEventListener('click', aplicarReferenciaSegurancaPrivada);
       document.getElementById('postEventAnalysisId').addEventListener('change', carregarDadosPosEventoSelecionado);
       document.getElementById('equipesEnvolvidas').addEventListener('input', agendarPesquisaHistorico);
       document.getElementById('localEvento').addEventListener('input', () => {
         agendarPrevisaoMeteorologica();
+        window.clearTimeout(window.capacidadeLocalTimer);
+        window.capacidadeLocalTimer = window.setTimeout(() => atualizarCapacidadeLocal({ silencioso: true }), 800);
         estimarPublicoAutomatico({ somenteSeVazio: true, origem: 'digitacao' });
       });
       document.getElementById('dataJogo').addEventListener('change', () => {

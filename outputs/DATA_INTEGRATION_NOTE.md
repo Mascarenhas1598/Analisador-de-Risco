@@ -36,3 +36,5 @@ A busca assistida/Google Custom Search deve gerar apenas evidencia externa compl
 Categorias com termos amplos devem exigir contexto operacional para evitar dupla contagem. Exemplo: briga no entorno exige referencia a entorno/rua/arredores; briga interna exige estadio/setor/arquibancada; arremesso exige verbo de arremesso e objeto; dano estrutural exige dano e estrutura/patrimonio.
 
 A variavel `relacaoTorcidas` deve ser tratada como informacao pre-jogo relacional, distinta de rivalidade entre clubes, historico pesquisado e conflito torcida x clube. Ela deve ter peso moderado para melhorar sensibilidade operacional sem produzir falso positivo por dupla contagem.
+
+A estimativa de publico deve priorizar capacidade maxima declarada e media historica operacional estimada do local. A busca assistida pode apoiar a identificacao de capacidade, mas a media historica usada no calculo permanece conservadora e auditavel ate haver base estatistica tratada por estadio.

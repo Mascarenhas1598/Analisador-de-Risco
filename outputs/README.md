@@ -26,6 +26,7 @@ O front-end chama:
 
 ```text
 POST /api/historico-equipes
+POST /api/capacidade-local
 ```
 
 Exemplo de entrada:
@@ -48,6 +49,8 @@ Exemplo de saída:
 ```
 
 As chaves ficam somente no servidor. Nao coloque `GOOGLE_API_KEY` no HTML.
+
+Com Google conectado, a busca assistida tambem apoia a identificacao da capacidade maxima declarada do local. Sem Google, o sistema usa base local conservadora para estadios conhecidos e informa isso na interface.
 
 ## Configurar login
 
