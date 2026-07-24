@@ -25,7 +25,7 @@ APP_PASSWORD=sua_senha
 ## Variáveis opcionais para Google Custom Search
 
 ```text
-GOOGLE_API_KEY=sua_chave_google
+GOOGLE_CUSTOM_SEARCH_API_KEY=sua_chave_google_custom_search
 GOOGLE_CSE_ID=seu_cse_id
 ```
 

@@ -19,7 +19,7 @@ http://localhost:4180/index.html
 Crie uma Programmable Search Engine e uma API key no Google Cloud. Depois rode:
 
 ```bash
-GOOGLE_API_KEY="sua_api_key" GOOGLE_CSE_ID="seu_search_engine_id" npm start
+GOOGLE_CUSTOM_SEARCH_API_KEY="sua_api_key" GOOGLE_CSE_ID="seu_search_engine_id" npm start
 ```
 
 O front-end chama:
@@ -48,7 +48,7 @@ Exemplo de saída:
 }
 ```
 
-As chaves ficam somente no servidor. Nao coloque `GOOGLE_API_KEY` no HTML.
+As chaves ficam somente no servidor. Nao coloque `GOOGLE_CUSTOM_SEARCH_API_KEY` no HTML.
 
 Com Google conectado, a busca assistida tambem apoia a identificacao da capacidade maxima declarada do local. Sem Google, o sistema usa base local conservadora para estadios conhecidos e informa isso na interface.
 
@@ -78,7 +78,7 @@ Start Command: npm start
 5. Em **Environment**, adicione:
 
 ```text
-GOOGLE_API_KEY=sua_api_key
+GOOGLE_CUSTOM_SEARCH_API_KEY=sua_api_key
 GOOGLE_CSE_ID=seu_search_engine_id
 APP_USERNAME=seu_usuario
 APP_PASSWORD=sua_senha
@@ -95,7 +95,7 @@ O Render vai gerar uma URL publica com HTTPS, acessivel pelo iPhone sem depender
 3. Configure as variaveis:
 
 ```text
-GOOGLE_API_KEY=sua_api_key
+GOOGLE_CUSTOM_SEARCH_API_KEY=sua_api_key
 GOOGLE_CSE_ID=seu_search_engine_id
 APP_USERNAME=seu_usuario
 APP_PASSWORD=sua_senha

@@ -8,7 +8,7 @@ services:
     envVars:
       - key: NODE_ENV
         value: production
-      - key: GOOGLE_API_KEY
+      - key: GOOGLE_CUSTOM_SEARCH_API_KEY
         sync: false
       - key: GOOGLE_CSE_ID
         sync: false

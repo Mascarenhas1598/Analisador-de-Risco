@@ -4,7 +4,7 @@ const path = require('node:path');
 
 const PORT = Number(process.env.PORT || 4180);
 const HOST = process.env.HOST || '0.0.0.0';
-const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY || '';
+const GOOGLE_CUSTOM_SEARCH_API_KEY = process.env.GOOGLE_CUSTOM_SEARCH_API_KEY || process.env.GOOGLE_API_KEY || '';
 const GOOGLE_CSE_ID = process.env.GOOGLE_CSE_ID || '';
 const APP_USERNAME = process.env.APP_USERNAME || '';
 const APP_PASSWORD = process.env.APP_PASSWORD || '';
@@ -71,8 +71,8 @@ const server = http.createServer(async (request, response) => {
 server.listen(PORT, HOST, () => {
   const displayHost = HOST === '0.0.0.0' ? 'localhost' : HOST;
   console.log(`Analisador de Risco em http://${displayHost}:${PORT}/index.html`);
-  if (!GOOGLE_API_KEY || !GOOGLE_CSE_ID) {
-    console.log('Google nao configurado. Defina GOOGLE_API_KEY e GOOGLE_CSE_ID para pesquisa real.');
+  if (!GOOGLE_CUSTOM_SEARCH_API_KEY || !GOOGLE_CSE_ID) {
+    console.log('Google nao configurado. Defina GOOGLE_CUSTOM_SEARCH_API_KEY e GOOGLE_CSE_ID para pesquisa real.');
   }
   if (!APP_USERNAME || !APP_PASSWORD) {
     console.log('Login local nao configurado. Defina APP_USERNAME e APP_PASSWORD.');
@@ -109,14 +109,14 @@ async function handleHistoricoEquipes(request, response) {
     return;
   }
 
-  if (!GOOGLE_API_KEY || !GOOGLE_CSE_ID) {
+  if (!GOOGLE_CUSTOM_SEARCH_API_KEY || !GOOGLE_CSE_ID) {
     sendJSON(response, 200, criarHistoricoLocal(equipes, 'local-sem-google'));
     return;
   }
 
   const query = `${equipes} historico confrontos rivalidade incidentes torcida seguranca estadio`;
   const searchURL = new URL('https://www.googleapis.com/customsearch/v1');
-  searchURL.searchParams.set('key', GOOGLE_API_KEY);
+  searchURL.searchParams.set('key', GOOGLE_CUSTOM_SEARCH_API_KEY);
   searchURL.searchParams.set('cx', GOOGLE_CSE_ID);
   searchURL.searchParams.set('q', query);
   searchURL.searchParams.set('num', '5');
@@ -223,7 +223,7 @@ async function handleCapacidadeLocal(request, response) {
 
   const fallback = calcularCapacidadeLocalServidor(localEvento);
 
-  if (!GOOGLE_API_KEY || !GOOGLE_CSE_ID) {
+  if (!GOOGLE_CUSTOM_SEARCH_API_KEY || !GOOGLE_CSE_ID) {
     sendJSON(response, 200, {
       ...fallback,
       origem: 'local-sem-google',
@@ -234,7 +234,7 @@ async function handleCapacidadeLocal(request, response) {
 
   const query = `${localEvento} estadio capacidade maxima media publico jogos futebol`;
   const searchURL = new URL('https://www.googleapis.com/customsearch/v1');
-  searchURL.searchParams.set('key', GOOGLE_API_KEY);
+  searchURL.searchParams.set('key', GOOGLE_CUSTOM_SEARCH_API_KEY);
   searchURL.searchParams.set('cx', GOOGLE_CSE_ID);
   searchURL.searchParams.set('q', query);
   searchURL.searchParams.set('num', '5');
