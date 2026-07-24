@@ -14,6 +14,9 @@ Estado ancorado em `PROJECT_ANCHOR.md`.
 
 - Interface web em `index.html`.
 - Identidade visual da NM Engenharia e Consultoria aplicada no login e cabecalho do app.
+- Seletor de idioma com bandeiras no canto superior direito da tela, permitindo alternar entre portugues, ingles e espanhol.
+- Preferencia de idioma salva no navegador por `localStorage` e reaplicada automaticamente ao reabrir o sistema.
+- Traducao local aplicada aos textos fixos da interface e aos principais blocos gerados na analise, incluindo risco, tipicidades, validacao, plano operacional e PDF.
 - Logo otimizada em `assets/nm-logo.png`.
 - Servidor Node em `server.js`.
 - API local `POST /api/historico-equipes`.
@@ -27,6 +30,10 @@ Estado ancorado em `PROJECT_ANCHOR.md`.
 - Protecao contra falso positivo: Vitoria da Conquista nao aciona o modelo Ba-Vi.
 - Modelo geral preservado para todos os demais jogos sem base historica especifica.
 - Resultado visual com medidor de risco, barras por variavel e top 3 fatores de maior contribuicao.
+- Painel "Probabilidade por tipicidade de incidente" incluido logo abaixo do risco geral, exibindo percentuais estimados e destacando prioridades de atencao da seguranca.
+- Tipicidades avaliadas: invasao de campo, arremesso de objetos, uso de sinalizadores, ingresso de objetos perfurocortantes, briga de torcidas no entorno, briga de torcida na area interna e danos a estrutura do estadio.
+- As probabilidades por tipicidade sao modulo complementar ao risco geral: usam variaveis pre-jogo, historico disponivel e evidencias da busca assistida, sem substituir a regressao logistica principal.
+- Plano operacional passou a incorporar as tipicidades prioritarias nos pontos criticos e nas acoes obrigatorias.
 - Resumo de acoes recomendadas para mitigacao gerado apos a analise, organizado por fase do espetaculo esportivo.
 - Plano operacional recomendado incluido no resultado e no PDF, com decisao operacional, nivel de resposta, efetivo recomendado, pontos criticos e acoes obrigatorias.
 - Historico local de analises anteriores incluido na interface, com armazenamento no navegador, reabertura de analises e limpeza do historico.

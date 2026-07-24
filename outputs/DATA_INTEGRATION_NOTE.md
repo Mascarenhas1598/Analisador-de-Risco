@@ -28,3 +28,5 @@ Ordem de aplicacao:
 ## Uso recomendado
 
 A base geral deve ser usada para melhorar risco historico de adversarios, publico esperado, validacao pos-evento e calibracao do modelo Bahia geral. O modelo Ba-Vi permanece como recorte especializado para classicos contra o Vitoria.
+
+O modulo de tipicidades deve ser tratado como camada operacional complementar: ele prioriza incidentes provaveis para planejamento de seguranca, mas nao substitui a probabilidade geral da regressao logistica.

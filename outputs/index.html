@@ -340,6 +340,60 @@
       color: #374151;
     }
 
+    .incident-panel {
+      margin-top: 20px;
+      padding: 16px;
+      border: 1px solid #fed7aa;
+      border-radius: 8px;
+      background: #fffaf3;
+    }
+
+    .incident-panel h3 {
+      margin: 0 0 8px;
+      color: #9a3412;
+    }
+
+    .incident-note {
+      margin: 0 0 12px;
+      color: #57534e;
+      font-size: 0.86rem;
+      line-height: 1.45;
+    }
+
+    .incident-list {
+      display: grid;
+      gap: 9px;
+    }
+
+    .incident-row {
+      display: grid;
+      grid-template-columns: minmax(190px, 1fr) minmax(130px, 180px) 64px;
+      gap: 10px;
+      align-items: center;
+      padding: 10px 12px;
+      border-left: 4px solid var(--priority-color, #f59e0b);
+      border-radius: 6px;
+      background: #ffffff;
+      color: #374151;
+      font-size: 0.88rem;
+    }
+
+    .incident-row strong {
+      color: #111827;
+    }
+
+    .priority-badge {
+      display: inline-flex;
+      width: fit-content;
+      padding: 4px 8px;
+      border-radius: 999px;
+      color: #ffffff;
+      background: var(--priority-color, #f59e0b);
+      font-size: 0.74rem;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
     .math-panel {
       margin-top: 20px;
       padding: 16px;
@@ -717,6 +771,41 @@
       background: #047857;
     }
 
+    .language-switcher {
+      position: fixed;
+      top: 14px;
+      right: 14px;
+      z-index: 1000;
+      display: inline-flex;
+      gap: 6px;
+      padding: 6px;
+      border: 1px solid rgba(8, 120, 191, 0.18);
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.94);
+      box-shadow: 0 10px 24px rgba(15, 23, 42, 0.12);
+      backdrop-filter: blur(8px);
+    }
+
+    .language-button {
+      display: grid;
+      place-items: center;
+      width: 34px;
+      height: 34px;
+      padding: 0;
+      border: 1px solid transparent;
+      border-radius: 999px;
+      background: transparent;
+      cursor: pointer;
+      font-size: 1.2rem;
+      line-height: 1;
+    }
+
+    .language-button:hover,
+    .language-button.active {
+      border-color: rgba(8, 120, 191, 0.32);
+      background: #eaf3ff;
+    }
+
     .invalid {
       border-color: #dc2626;
       box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.12);
@@ -832,6 +921,12 @@
   </style>
 </head>
 <body>
+  <nav class="language-switcher no-print" aria-label="Selecionar idioma">
+    <button class="language-button" type="button" data-lang="pt" aria-label="Português" title="Português">🇧🇷</button>
+    <button class="language-button" type="button" data-lang="en" aria-label="English" title="English">🇺🇸</button>
+    <button class="language-button" type="button" data-lang="es" aria-label="Español" title="Español">🇪🇸</button>
+  </nav>
+
   <main>
     <section id="login" class="login-shell" aria-labelledby="loginTitulo">
       <form id="loginForm" class="panel login-panel" autocomplete="on" novalidate>
@@ -1140,6 +1235,317 @@
   <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
 
   <script>
+    const ORIGINAL_TEXT_NODES = new WeakMap();
+    let idiomaAtual = localStorage.getItem('sisavaliaIdioma') || 'pt';
+    let ultimaAnaliseRenderizada = null;
+
+    const TRANSLATIONS = {
+      en: {
+        'Analisador de Risco': 'Risk Analyzer',
+        'Analise de Risco': 'Risk Analysis',
+        'Acesso ao sistema': 'System access',
+        'Analisador de risco operacional': 'Operational risk analyzer',
+        'Usuário': 'User',
+        'Senha': 'Password',
+        'Entrar': 'Sign in',
+        'Sair': 'Sign out',
+        'Dados do evento': 'Event data',
+        'Equipes envolvidas': 'Teams involved',
+        'Informe as equipes para pesquisar histórico, confrontos, rivalidade e incidentes.': 'Enter the teams to search history, matchups, rivalry and incidents.',
+        'Pesquisar histórico': 'Search history',
+        'Local do evento': 'Event venue',
+        'Data': 'Date',
+        'Público estimado': 'Estimated attendance',
+        'Pode ser estimado automaticamente pelo jogo, local e contexto.': 'Can be estimated automatically from match, venue and context.',
+        'Estimar público': 'Estimate attendance',
+        'Rivalidade entre equipes (0 a 1)': 'Team rivalry (0 to 1)',
+        'Impacto da posição na tabela (0 a 1)': 'Table position impact (0 to 1)',
+        'Tipo de campeonato': 'Competition type',
+        'Selecione': 'Select',
+        'Amistoso': 'Friendly',
+        'Regional': 'Regional',
+        'Estadual': 'State',
+        'Nacional': 'National',
+        'Continental': 'Continental',
+        'Final ou jogo decisivo': 'Final or decisive match',
+        'Dia de semana': 'Day of week',
+        'Segunda-feira': 'Monday',
+        'Terça-feira': 'Tuesday',
+        'Quarta-feira': 'Wednesday',
+        'Quinta-feira': 'Thursday',
+        'Sexta-feira': 'Friday',
+        'Sábado': 'Saturday',
+        'Domingo': 'Sunday',
+        'Horário da partida': 'Match time',
+        'Início até 18h30': 'Kickoff until 6:30 PM',
+        'Início após 18h30': 'Kickoff after 6:30 PM',
+        'Mandante': 'Home team',
+        'Outro': 'Other',
+        'Meteorologia prevista': 'Weather forecast',
+        'Favorável': 'Favorable',
+        'Instável': 'Unstable',
+        'Chuva': 'Rain',
+        'Severa': 'Severe',
+        'Informe local e data para preencher automaticamente.': 'Enter venue and date to fill automatically.',
+        'Atualizar previsão': 'Update forecast',
+        'Venda/liberação de álcool': 'Alcohol sale/permission',
+        'Não': 'No',
+        'Sim': 'Yes',
+        'JECRIM no evento': 'JECRIM at the event',
+        'Conflitos torcida x clube (0 a 1)': 'Supporter x club conflict (0 to 1)',
+        'Histórico de objetos proibidos da torcida (0 a 1)': 'Supporter history of prohibited objects (0 to 1)',
+        'Torcida única': 'Single-supporter attendance',
+        'Não aplicável': 'Not applicable',
+        'Protocolo de policiamento': 'Policing protocol',
+        'Obedece': 'Compliant',
+        'Não obedece': 'Non-compliant',
+        'Não informado': 'Not informed',
+        'Seguranças privados empregados': 'Private security staff employed',
+        'Referência operacional: 1 segurança para cada 100 torcedores.': 'Operational reference: 1 security guard per 100 spectators.',
+        'Usar referência 1/100': 'Use 1/100 reference',
+        'Observações': 'Notes',
+        'Analisar': 'Analyze',
+        'Status da análise': 'Analysis status',
+        'Aguardando consulta': 'Waiting for query',
+        'Análises anteriores': 'Previous analyses',
+        'Histórico salvo localmente neste navegador.': 'History saved locally in this browser.',
+        'Limpar': 'Clear',
+        'Pós-evento': 'Post-event',
+        'Registre o realizado para comparar previsão, operação e ocorrências.': 'Record actual data to compare forecast, operation and incidents.',
+        'Análise de referência': 'Reference analysis',
+        'Selecione uma análise salva': 'Select a saved analysis',
+        'Público real': 'Actual attendance',
+        'Seguranças empregados reais': 'Actual security staff',
+        'Incidentes de torcida': 'Supporter incidents',
+        'Atendimentos médicos': 'Medical assists',
+        'Atrasos ou retenções na entrada': 'Entry delays or holds',
+        'Tempo de evacuação em minutos': 'Evacuation time in minutes',
+        'Ocorrência grave': 'Serious occurrence',
+        'Nenhuma': 'None',
+        'Moderada': 'Moderate',
+        'Grave': 'Serious',
+        'Observações pós-evento': 'Post-event notes',
+        'Salvar pós-evento': 'Save post-event',
+        'de 100': 'of 100',
+        'Probabilidade por tipicidade de incidente': 'Probability by incident type',
+        'Estimativa complementar ao risco geral, baseada nas variáveis pré-jogo, histórico disponível e evidências da busca assistida. Prioridades orientam planejamento operacional e não representam previsão determinística.': 'Complementary estimate to the general risk, based on pre-match variables, available history and assisted-search evidence. Priorities guide operational planning and are not deterministic predictions.',
+        'Fatores que mais influenciam o risco': 'Factors with the strongest risk influence',
+        'Padrão matemático das variáveis pré-jogo': 'Mathematical pattern of pre-match variables',
+        'Variável': 'Variable',
+        'Validação operacional automática': 'Automatic operational validation',
+        'Plano operacional recomendado': 'Recommended operational plan',
+        'Decisão operacional': 'Operational decision',
+        'Efetivo recomendado': 'Recommended staffing',
+        'Nível de resposta': 'Response level',
+        'Pontos críticos': 'Critical points',
+        'Ações obrigatórias': 'Mandatory actions',
+        'Ações recomendadas para mitigação por fase': 'Recommended mitigation actions by phase',
+        'Cenário ajustado após mitigação': 'Adjusted scenario after mitigation',
+        'Atual': 'Current',
+        'Ajustado': 'Adjusted',
+        'Redução potencial': 'Potential reduction',
+        'Baixar PDF': 'Download PDF',
+        'Detalhes:': 'Details:',
+        'Pontuacao de risco': 'Risk score',
+        'Risco baixo': 'Low risk',
+        'Risco moderado': 'Moderate risk',
+        'Risco alto': 'High risk',
+        'baixo': 'low',
+        'moderado': 'moderate',
+        'alto': 'high',
+        'Prioridade crítica': 'Critical priority',
+        'Alta atenção': 'High attention',
+        'Monitorar': 'Monitor',
+        'Baixa': 'Low',
+        'Briga de torcidas no entorno': 'Supporter fight around the venue',
+        'Arremesso de objetos': 'Object throwing',
+        'Uso de sinalizadores': 'Use of flares',
+        'Briga de torcida na área interna': 'Supporter fight inside the venue',
+        'Ingresso de objetos perfurocortantes': 'Entry of sharp objects',
+        'Danos à estrutura do estádio': 'Damage to stadium structure',
+        'Invasão de campo': 'Pitch invasion',
+        'Português': 'Portuguese',
+        'English': 'English',
+        'Español': 'Spanish'
+      },
+      es: {
+        'Analisador de Risco': 'Analizador de Riesgo',
+        'Analise de Risco': 'Análisis de Riesgo',
+        'Acesso ao sistema': 'Acceso al sistema',
+        'Analisador de risco operacional': 'Analizador de riesgo operativo',
+        'Usuário': 'Usuario',
+        'Senha': 'Contraseña',
+        'Entrar': 'Entrar',
+        'Sair': 'Salir',
+        'Dados do evento': 'Datos del evento',
+        'Equipes envolvidas': 'Equipos involucrados',
+        'Informe as equipes para pesquisar histórico, confrontos, rivalidade e incidentes.': 'Informe los equipos para buscar historial, enfrentamientos, rivalidad e incidentes.',
+        'Pesquisar histórico': 'Buscar historial',
+        'Local do evento': 'Lugar del evento',
+        'Data': 'Fecha',
+        'Público estimado': 'Público estimado',
+        'Pode ser estimado automaticamente pelo jogo, local e contexto.': 'Puede estimarse automáticamente según partido, lugar y contexto.',
+        'Estimar público': 'Estimar público',
+        'Rivalidade entre equipes (0 a 1)': 'Rivalidad entre equipos (0 a 1)',
+        'Impacto da posição na tabela (0 a 1)': 'Impacto de posición en la tabla (0 a 1)',
+        'Tipo de campeonato': 'Tipo de campeonato',
+        'Selecione': 'Seleccione',
+        'Amistoso': 'Amistoso',
+        'Regional': 'Regional',
+        'Estadual': 'Estatal',
+        'Nacional': 'Nacional',
+        'Continental': 'Continental',
+        'Final ou jogo decisivo': 'Final o partido decisivo',
+        'Dia de semana': 'Día de la semana',
+        'Segunda-feira': 'Lunes',
+        'Terça-feira': 'Martes',
+        'Quarta-feira': 'Miércoles',
+        'Quinta-feira': 'Jueves',
+        'Sexta-feira': 'Viernes',
+        'Sábado': 'Sábado',
+        'Domingo': 'Domingo',
+        'Horário da partida': 'Horario del partido',
+        'Início até 18h30': 'Inicio hasta las 18:30',
+        'Início após 18h30': 'Inicio después de las 18:30',
+        'Mandante': 'Local',
+        'Outro': 'Otro',
+        'Meteorologia prevista': 'Meteorología prevista',
+        'Favorável': 'Favorable',
+        'Instável': 'Inestable',
+        'Chuva': 'Lluvia',
+        'Severa': 'Severa',
+        'Informe local e data para preencher automaticamente.': 'Informe lugar y fecha para completar automáticamente.',
+        'Atualizar previsão': 'Actualizar previsión',
+        'Venda/liberação de álcool': 'Venta/liberación de alcohol',
+        'Não': 'No',
+        'Sim': 'Sí',
+        'JECRIM no evento': 'JECRIM en el evento',
+        'Conflitos torcida x clube (0 a 1)': 'Conflictos hinchada x club (0 a 1)',
+        'Histórico de objetos proibidos da torcida (0 a 1)': 'Historial de objetos prohibidos de la hinchada (0 a 1)',
+        'Torcida única': 'Hinchada única',
+        'Não aplicável': 'No aplicable',
+        'Protocolo de policiamento': 'Protocolo policial',
+        'Obedece': 'Cumple',
+        'Não obedece': 'No cumple',
+        'Não informado': 'No informado',
+        'Seguranças privados empregados': 'Seguridad privada empleada',
+        'Referência operacional: 1 segurança para cada 100 torcedores.': 'Referencia operativa: 1 seguridad por cada 100 espectadores.',
+        'Usar referência 1/100': 'Usar referencia 1/100',
+        'Observações': 'Observaciones',
+        'Analisar': 'Analizar',
+        'Status da análise': 'Estado del análisis',
+        'Aguardando consulta': 'Esperando consulta',
+        'Análises anteriores': 'Análisis anteriores',
+        'Histórico salvo localmente neste navegador.': 'Historial guardado localmente en este navegador.',
+        'Limpar': 'Limpiar',
+        'Pós-evento': 'Post-evento',
+        'Registre o realizado para comparar previsão, operação e ocorrências.': 'Registre lo realizado para comparar previsión, operación y ocurrencias.',
+        'Análise de referência': 'Análisis de referencia',
+        'Selecione uma análise salva': 'Seleccione un análisis guardado',
+        'Público real': 'Público real',
+        'Seguranças empregados reais': 'Seguridad real empleada',
+        'Incidentes de torcida': 'Incidentes de hinchada',
+        'Atendimentos médicos': 'Atenciones médicas',
+        'Atrasos ou retenções na entrada': 'Retrasos o retenciones en la entrada',
+        'Tempo de evacuação em minutos': 'Tiempo de evacuación en minutos',
+        'Ocorrência grave': 'Ocurrencia grave',
+        'Nenhuma': 'Ninguna',
+        'Moderada': 'Moderada',
+        'Grave': 'Grave',
+        'Observações pós-evento': 'Observaciones post-evento',
+        'Salvar pós-evento': 'Guardar post-evento',
+        'de 100': 'de 100',
+        'Probabilidade por tipicidade de incidente': 'Probabilidad por tipicidad de incidente',
+        'Estimativa complementar ao risco geral, baseada nas variáveis pré-jogo, histórico disponível e evidências da busca assistida. Prioridades orientam planejamento operacional e não representam previsão determinística.': 'Estimación complementaria al riesgo general, basada en variables prepartido, historial disponible y evidencias de la búsqueda asistida. Las prioridades orientan la planificación operativa y no representan predicción determinística.',
+        'Fatores que mais influenciam o risco': 'Factores que más influyen en el riesgo',
+        'Padrão matemático das variáveis pré-jogo': 'Patrón matemático de las variables prepartido',
+        'Variável': 'Variable',
+        'Validação operacional automática': 'Validación operativa automática',
+        'Plano operacional recomendado': 'Plan operativo recomendado',
+        'Decisão operacional': 'Decisión operativa',
+        'Efetivo recomendado': 'Efectivo recomendado',
+        'Nível de resposta': 'Nivel de respuesta',
+        'Pontos críticos': 'Puntos críticos',
+        'Ações obrigatórias': 'Acciones obligatorias',
+        'Ações recomendadas para mitigação por fase': 'Acciones recomendadas para mitigación por fase',
+        'Cenário ajustado após mitigação': 'Escenario ajustado tras mitigación',
+        'Atual': 'Actual',
+        'Ajustado': 'Ajustado',
+        'Redução potencial': 'Reducción potencial',
+        'Baixar PDF': 'Descargar PDF',
+        'Detalhes:': 'Detalles:',
+        'Pontuacao de risco': 'Puntuación de riesgo',
+        'Risco baixo': 'Riesgo bajo',
+        'Risco moderado': 'Riesgo moderado',
+        'Risco alto': 'Riesgo alto',
+        'baixo': 'bajo',
+        'moderado': 'moderado',
+        'alto': 'alto',
+        'Prioridade crítica': 'Prioridad crítica',
+        'Alta atenção': 'Alta atención',
+        'Monitorar': 'Monitorear',
+        'Baixa': 'Baja',
+        'Briga de torcidas no entorno': 'Pelea de hinchadas en el entorno',
+        'Arremesso de objetos': 'Lanzamiento de objetos',
+        'Uso de sinalizadores': 'Uso de bengalas',
+        'Briga de torcida na área interna': 'Pelea de hinchada en el área interna',
+        'Ingresso de objetos perfurocortantes': 'Ingreso de objetos cortopunzantes',
+        'Danos à estrutura do estádio': 'Daños a la estructura del estadio',
+        'Invasão de campo': 'Invasión de campo',
+        'Português': 'Portugués',
+        'English': 'Inglés',
+        'Español': 'Español'
+      }
+    };
+
+    function traduzirTexto(original) {
+      if (idiomaAtual === 'pt') return original;
+      return TRANSLATIONS[idiomaAtual]?.[original] || original;
+    }
+
+    function traduzirNos(root = document.body) {
+      const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+        acceptNode(node) {
+          const parent = node.parentElement;
+          if (!parent || ['SCRIPT', 'STYLE'].includes(parent.tagName)) return NodeFilter.FILTER_REJECT;
+          if (!node.nodeValue.trim()) return NodeFilter.FILTER_REJECT;
+          return NodeFilter.FILTER_ACCEPT;
+        }
+      });
+
+      const nodes = [];
+      while (walker.nextNode()) nodes.push(walker.currentNode);
+
+      nodes.forEach((node) => {
+        if (!ORIGINAL_TEXT_NODES.has(node)) {
+          ORIGINAL_TEXT_NODES.set(node, node.nodeValue);
+        }
+
+        const original = ORIGINAL_TEXT_NODES.get(node);
+        const leading = original.match(/^\s*/)?.[0] || '';
+        const trailing = original.match(/\s*$/)?.[0] || '';
+        const clean = original.trim();
+        node.nodeValue = `${leading}${traduzirTexto(clean)}${trailing}`;
+      });
+
+      document.documentElement.lang = idiomaAtual === 'pt' ? 'pt-br' : idiomaAtual;
+      document.title = traduzirTexto('Analisador de Risco');
+      document.querySelectorAll('.language-button').forEach((button) => {
+        button.classList.toggle('active', button.dataset.lang === idiomaAtual);
+      });
+    }
+
+    function alterarIdioma(lang) {
+      idiomaAtual = ['pt', 'en', 'es'].includes(lang) ? lang : 'pt';
+      localStorage.setItem('sisavaliaIdioma', idiomaAtual);
+
+      if (ultimaAnaliseRenderizada) {
+        renderResultado(ultimaAnaliseRenderizada, { persistir: false });
+      }
+
+      traduzirNos();
+    }
+
     class RiskAnalyzer {
       constructor() {
         this.model = null;
@@ -2108,6 +2514,11 @@
       const deficitSeguranca = Math.max(coberturaPrivada.necessarios - factors.segurancasPrivados, 0);
       const sobraSeguranca = Math.max(factors.segurancasPrivados - coberturaPrivada.necessarios, 0);
       const validacoes = gerarValidacoesOperacionais(factors, modelo);
+      const incidentes = calcularProbabilidadesIncidentes(calcularPontuacaoRisco(factors), modelo, factors);
+      const prioridadesIncidentes = incidentes
+        .filter((incidente) => incidente.probabilidade >= 0.3)
+        .slice(0, 3)
+        .map((incidente) => `${incidente.tipo} (${incidente.percentual}%)`);
 
       return [
         'Metodologia: regressão logística',
@@ -2145,6 +2556,7 @@
         `Cobertura de segurança privada: ${(coberturaPrivada.cobertura * 100).toFixed(0)}%`,
         `Risco por déficit de segurança: ${(variaveis.riscoSeguranca * 100).toFixed(0)}%`,
         `Sinais nas observações: ${(variaveis.sinaisObservacoes * 100).toFixed(0)}%`,
+        prioridadesIncidentes.length ? `Tipicidades prioritárias: ${prioridadesIncidentes.join(', ')}` : 'Tipicidades prioritárias: sem prioridade alta automática.',
         `Validações operacionais: ${validacoes.resumo}`
       ];
     }
@@ -2354,6 +2766,7 @@
 
     function renderResultado(data, options = {}) {
       const persistir = options.persistir !== false;
+      ultimaAnaliseRenderizada = data;
       const resultado = document.getElementById('resultado');
       resultado.classList.remove('hidden');
       const modelo = calcularRegressaoLogistica(data.factors);
@@ -2362,6 +2775,7 @@
       const acoesMitigacao = gerarAcoesMitigacao(data.risco, modelo, data.factors);
       const cenarioMitigado = calcularCenarioMitigado(data.factors);
       const fatoresBaixos = montarFatoresBaixaPressao(modelo);
+      const incidentes = calcularProbabilidadesIncidentes(data.risco, modelo, data.factors);
       const planoOperacional = gerarPlanoOperacional(data, modelo, data.factors, cenarioMitigado);
       const validacoesOperacionais = gerarValidacoesOperacionais(data.factors, modelo);
       const linhas = [
@@ -2392,6 +2806,8 @@
             <span class="risk-label">${escaparHTML(rotuloRisco(data.risco))}</span>
           </div>
         </div>
+
+        ${renderProbabilidadesIncidentes(incidentes)}
 
         <div class="chart-section">
           <div>
@@ -2478,6 +2894,8 @@
       if (persistir) {
         salvarAnaliseHistorico(data);
       }
+
+      traduzirNos(resultado);
     }
 
     function renderExplicacaoMatematica(modelo) {
@@ -2504,6 +2922,153 @@
             </div>
             ${linhas}
           </div>
+        </div>
+      `;
+    }
+
+    function calcularProbabilidadesIncidentes(score, modelo, factors) {
+      const v = modelo.variaveis;
+      const riscoGeral = limitarNumero(score / 100, 0, 1);
+      const evidenciaExterna = limitarNumero((v.historicoEquipes * 0.5) + (v.sinaisObservacoes * 0.5), 0, 1);
+      const tensaoTorcida = limitarNumero((v.rivalidadeEquipes * 0.45) + (v.conflitoTorcidaClube * 0.35) + (v.historicoEquipes * 0.2), 0, 1);
+      const filtroFragil = limitarNumero((v.protocoloPoliciamento * 0.38) + (v.riscoSeguranca * 0.32) + (v.historicoObjetosProibidos * 0.3), 0, 1);
+      const jogoSensivel = limitarNumero((v.posicaoTabela * 0.34) + (v.tipoCampeonato * 0.3) + (v.publico * 0.22) + (v.horarioPartida * 0.14), 0, 1);
+
+      const incidentes = [
+        {
+          tipo: 'Briga de torcidas no entorno',
+          probabilidade: probabilidadeTipicidade(riscoGeral, [
+            [tensaoTorcida, 0.32],
+            [v.complexidadeLocal, 0.18],
+            [v.alcoolLiberado, 0.12],
+            [v.horarioPartida, 0.08],
+            [evidenciaExterna, 0.1]
+          ]),
+          foco: 'Separação de fluxos, barreiras, escolta e monitoramento de chegada/dispersão.'
+        },
+        {
+          tipo: 'Arremesso de objetos',
+          probabilidade: probabilidadeTipicidade(riscoGeral, [
+            [v.historicoObjetosProibidos, 0.28],
+            [tensaoTorcida, 0.22],
+            [jogoSensivel, 0.12],
+            [v.sinaisObservacoes, 0.1],
+            [filtroFragil, 0.08]
+          ]),
+          foco: 'Revista, controle de itens autorizados, vigilância de setores sensíveis e resposta rápida.'
+        },
+        {
+          tipo: 'Uso de sinalizadores',
+          probabilidade: probabilidadeTipicidade(riscoGeral, [
+            [v.historicoObjetosProibidos, 0.3],
+            [filtroFragil, 0.22],
+            [v.historicoEquipes, 0.12],
+            [v.sinaisObservacoes, 0.08],
+            [v.publico, 0.08]
+          ]),
+          foco: 'Inspeção de materiais de torcida, bandeiras, instrumentos, mochilas e pontos de concentração.'
+        },
+        {
+          tipo: 'Briga de torcida na área interna',
+          probabilidade: probabilidadeTipicidade(riscoGeral, [
+            [tensaoTorcida, 0.28],
+            [v.publico, 0.16],
+            [v.riscoSeguranca, 0.14],
+            [v.alcoolLiberado, 0.1],
+            [v.torcidaUnica <= 0.2 ? 0.25 : v.torcidaUnica, 0.06]
+          ]),
+          foco: 'Setorização, resposta rápida, monitoramento por câmeras e presença nos pontos de separação.'
+        },
+        {
+          tipo: 'Ingresso de objetos perfurocortantes',
+          probabilidade: probabilidadeTipicidade(riscoGeral, [
+            [v.historicoObjetosProibidos, 0.34],
+            [filtroFragil, 0.28],
+            [v.publico, 0.08],
+            [v.sinaisObservacoes, 0.08],
+            [v.rivalidadeEquipes, 0.06]
+          ]),
+          foco: 'Revista técnica, triagem de volumes, detector manual quando disponível e registro de achados.'
+        },
+        {
+          tipo: 'Danos à estrutura do estádio',
+          probabilidade: probabilidadeTipicidade(riscoGeral, [
+            [tensaoTorcida, 0.24],
+            [v.conflitoTorcidaClube, 0.2],
+            [v.publico, 0.14],
+            [v.sinaisObservacoes, 0.1],
+            [jogoSensivel, 0.06]
+          ]),
+          foco: 'Proteção de vidros, divisórias, cadeiras, setores de transição e equipes de contenção patrimonial.'
+        },
+        {
+          tipo: 'Invasão de campo',
+          probabilidade: probabilidadeTipicidade(riscoGeral, [
+            [jogoSensivel, 0.3],
+            [v.conflitoTorcidaClube, 0.18],
+            [v.riscoSeguranca, 0.16],
+            [v.publico, 0.1],
+            [v.sinaisObservacoes, 0.08]
+          ]),
+          foco: 'Proteção de campo, barreiras, stewarding no perímetro e resposta a gatilhos de placar/arbitragem.'
+        }
+      ];
+
+      return incidentes
+        .map((incidente) => ({
+          ...incidente,
+          percentual: Math.round(incidente.probabilidade * 100),
+          prioridade: classificarPrioridadeIncidente(incidente.probabilidade)
+        }))
+        .sort((a, b) => b.percentual - a.percentual);
+    }
+
+    function probabilidadeTipicidade(riscoGeral, componentes) {
+      const base = riscoGeral * 0.28;
+      const ajuste = componentes.reduce((total, [valor, peso]) => total + (limitarNumero(valor, 0, 1) * peso), 0);
+      return limitarNumero(base + ajuste, 0.02, 0.92);
+    }
+
+    function classificarPrioridadeIncidente(probabilidade) {
+      if (probabilidade >= 0.45) {
+        return { rotulo: 'Prioridade crítica', cor: '#dc2626' };
+      }
+
+      if (probabilidade >= 0.3) {
+        return { rotulo: 'Alta atenção', cor: '#ea580c' };
+      }
+
+      if (probabilidade >= 0.18) {
+        return { rotulo: 'Monitorar', cor: '#f59e0b' };
+      }
+
+      return { rotulo: 'Baixa', cor: '#16a34a' };
+    }
+
+    function renderProbabilidadesIncidentes(incidentes) {
+      const prioridades = incidentes
+        .filter((incidente) => incidente.probabilidade >= 0.3)
+        .slice(0, 3)
+        .map((incidente) => incidente.tipo);
+
+      return `
+        <div class="incident-panel">
+          <h3>Probabilidade por tipicidade de incidente</h3>
+          <p class="incident-note">Estimativa complementar ao risco geral, baseada nas variáveis pré-jogo, histórico disponível e evidências da busca assistida. Prioridades orientam planejamento operacional e não representam previsão determinística.</p>
+          ${prioridades.length ? `<p class="incident-note"><strong>Prioridades de atenção da segurança:</strong> ${escaparHTML(prioridades.join(', '))}.</p>` : '<p class="incident-note"><strong>Prioridades de atenção da segurança:</strong> manter monitoramento preventivo das tipicidades listadas.</p>'}
+          <div class="incident-list">
+            ${incidentes.map((incidente) => renderIncidentePrioritario(incidente)).join('')}
+          </div>
+        </div>
+      `;
+    }
+
+    function renderIncidentePrioritario(incidente) {
+      return `
+        <div class="incident-row" style="--priority-color: ${incidente.prioridade.cor};">
+          <strong>${escaparHTML(incidente.tipo)}</strong>
+          <span class="priority-badge">${escaparHTML(incidente.prioridade.rotulo)}</span>
+          <strong>${incidente.percentual}%</strong>
         </div>
       `;
     }
@@ -2579,8 +3144,13 @@
       const reforco = data.risco >= 70 ? 1.2 : data.risco >= 50 ? 1.1 : 1;
       const efetivoRecomendado = Math.ceil(efetivoBase * reforco);
       const variaveis = modelo.variaveis;
+      const incidentesPrioritarios = calcularProbabilidadesIncidentes(data.risco, modelo, factors)
+        .filter((incidente) => incidente.probabilidade >= 0.3)
+        .slice(0, 3);
+      const nomesIncidentesPrioritarios = incidentesPrioritarios.map((incidente) => incidente.tipo).join(', ');
       const pontosCriticos = removerTextosDuplicados([
         variaveis.publico >= 0.6 ? 'Grande concentração de público e pressão sobre acessos, filtros e circulação interna.' : 'Público dentro de faixa operacional controlável.',
+        nomesIncidentesPrioritarios ? `Tipicidades prioritárias para atenção da segurança: ${nomesIncidentesPrioritarios}.` : null,
         variaveis.historicoEquipes >= 0.5 || variaveis.rivalidadeEquipes >= 0.5 ? 'Histórico/rivalidade requer segregação de fluxos e vigilância ampliada.' : null,
         variaveis.posicaoTabela >= 0.7 ? 'Impacto competitivo elevado pode intensificar reação a placar, arbitragem e resultado.' : null,
         variaveis.meteorologia >= 0.6 ? 'Meteorologia exige contingência para filas, áreas abertas, drenagem e comunicação.' : null,
@@ -2593,6 +3163,7 @@
         `Planejar efetivo privado recomendado de ${efetivoRecomendado.toLocaleString('pt-BR')} profissionais para o cenário analisado.`,
         'Validar sala de controle, comunicação rádio, rotas de emergência, atendimento médico e responsáveis por decisão.',
         'Formalizar matriz de responsabilidades por fase: montagem, pré-entrada, entrada, jogo, evacuação e fechamento.',
+        nomesIncidentesPrioritarios ? `Distribuir responsáveis para as tipicidades prioritárias: ${nomesIncidentesPrioritarios}.` : null,
         variaveis.historicoObjetosProibidos >= 0.33 ? 'Definir procedimento de inspeção para materiais de torcida, instrumentos, faixas, mastros, mochilas e itens volumosos.' : null,
         data.risco >= 70 ? 'Acionar reunião de coordenação com segurança pública, operação do estádio, clube mandante e supervisão privada.' : null,
         cenarioMitigado.reducao > 0 ? `Aplicar medidas mitigadoras com potencial de redução de ${cenarioMitigado.reducao} ponto(s) no risco.` : 'Manter monitoramento preventivo e registro operacional para calibração futura.'
@@ -2914,6 +3485,7 @@
       const logoRelatorio = await carregarImagemRelatorio('assets/nm-logo.png');
       const timestamp = new Date().toISOString().slice(0, 19).replaceAll(':', '-');
       const resultSummaryHTML = clone.querySelector('.result-summary')?.outerHTML || '';
+      const incidentHTML = clone.querySelector('.incident-panel')?.outerHTML || '';
       const chartHTML = clone.querySelector('.chart-section')?.outerHTML || '';
       const mathHTML = clone.querySelector('.math-panel')?.outerHTML || '';
       const validationHTML = clone.querySelector('.validation-panel')?.outerHTML || '';
@@ -3157,6 +3729,40 @@
           background: #ffffff;
         }
 
+        .report-content .incident-panel {
+          margin-top: 12px;
+          padding: 10px 12px;
+          border-radius: 6px;
+        }
+
+        .report-content .incident-panel h3 {
+          margin-bottom: 5px;
+          font-size: 0.98rem;
+        }
+
+        .report-content .incident-note {
+          margin-bottom: 7px;
+          font-size: 0.72rem;
+          line-height: 1.28;
+        }
+
+        .report-content .incident-list {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 6px;
+        }
+
+        .report-content .incident-row {
+          grid-template-columns: minmax(0, 1fr) 74px 38px;
+          gap: 5px;
+          padding: 6px 7px;
+          font-size: 0.68rem;
+        }
+
+        .report-content .priority-badge {
+          padding: 3px 5px;
+          font-size: 0.58rem;
+        }
+
         .report-content .top-list {
           margin-top: 8px;
           margin-bottom: 14px;
@@ -3381,7 +3987,7 @@
       <img class="report-logo" src="${logoRelatorio}" alt="NM Engenharia e Consultoria">
     </header>
     <section class="report-title-block">
-      <h1>Analise de Risco</h1>
+      <h1>${escaparHTML(traduzirTexto('Analise de Risco'))}</h1>
       <div class="report-title-line"></div>
       <p class="report-match">Jogo: ${escaparHTML(jogo)}</p>
       <p class="report-reference">Local do evento: ${escaparHTML(localEvento)}</p>
@@ -3389,6 +3995,7 @@
     </section>
     <section class="report-content">
       ${resultSummaryHTML}
+      ${incidentHTML}
       ${chartHTML}
     </section>
   </main>
@@ -3439,7 +4046,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Analise de Risco - ${escaparHTML(jogo)}</title>
+  <title>${escaparHTML(traduzirTexto('Analise de Risco'))} - ${escaparHTML(jogo)}</title>
   <style>${styles}${reportStyles}</style>
 </head>
 <body class="report-body">
@@ -3805,8 +4412,12 @@
       ['tipoCampeonato', 'diaSemana', 'horarioPartida', 'meteorologia', 'alcoolLiberado', 'torcidaUnica', 'rivalidadeEquipes', 'posicaoTabela'].forEach((id) => {
         document.getElementById(id).addEventListener('change', () => estimarPublicoAutomatico({ somenteSeVazio: true, origem: 'digitacao' }));
       });
+      document.querySelectorAll('.language-button').forEach((button) => {
+        button.addEventListener('click', () => alterarIdioma(button.dataset.lang));
+      });
       renderHistoricoAnalises();
       renderPostEventOptions();
+      traduzirNos();
     });
   </script>
 </body>

@@ -5,6 +5,8 @@ Estado ancorado como versao atual do **Analisador de Risco - NM Engenharia e Con
 ## Marco salvo
 
 - Interface com identidade visual da NM Engenharia e Consultoria.
+- Seletor de idioma por bandeiras no canto superior direito: portugues, ingles e espanhol.
+- Traducao local da interface e dos principais blocos do resultado, sem dependencia de servico externo.
 - Login sem credenciais expostas na tela ou no HTML.
 - Credenciais configuradas por variaveis de ambiente `APP_USERNAME` e `APP_PASSWORD`.
 - API local para historico de equipes.
@@ -28,6 +30,8 @@ Estado ancorado como versao atual do **Analisador de Risco - NM Engenharia e Con
 - Validacao operacional automatica com alertas criticos/atencao/OK antes do plano operacional.
 - Secao Pos-evento com comparacao previsto x realizado e aprendizados para calibracao futura.
 - Resultado com medidor, barras por variavel e top fatores.
+- Modulo complementar de probabilidade por tipicidade de incidente incluido abaixo do risco geral, com percentuais estimados e prioridades de atencao da seguranca.
+- Tipicidades contempladas: invasao de campo, arremesso de objetos, uso de sinalizadores, ingresso de objetos perfurocortantes, briga no entorno, briga interna e danos a estrutura do estadio.
 - Plano operacional recomendado no resultado e no PDF.
 - Historico local de analises com reabertura e limpeza.
 - Cenario ajustado apos mitigacao.
