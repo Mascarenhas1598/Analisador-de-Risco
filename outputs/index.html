@@ -340,6 +340,51 @@
       color: #374151;
     }
 
+    .math-panel {
+      margin-top: 20px;
+      padding: 16px;
+      border: 1px solid #dbeafe;
+      border-radius: 8px;
+      background: #f8fbff;
+    }
+
+    .math-panel h3 {
+      margin: 0 0 8px;
+      color: #073b80;
+    }
+
+    .math-panel p {
+      margin: 0 0 12px;
+      color: #374151;
+    }
+
+    .math-table {
+      display: grid;
+      gap: 7px;
+    }
+
+    .math-row {
+      display: grid;
+      grid-template-columns: minmax(170px, 1.3fr) 80px 80px 90px;
+      gap: 8px;
+      align-items: center;
+      padding: 8px 10px;
+      border-radius: 6px;
+      background: #ffffff;
+      color: #374151;
+      font-size: 0.84rem;
+    }
+
+    .math-row strong {
+      color: #111827;
+    }
+
+    .math-row.math-head {
+      background: #eaf3ff;
+      color: #073b80;
+      font-weight: 750;
+    }
+
     .mitigation-panel {
       margin-top: 20px;
       padding: 16px;
@@ -956,6 +1001,11 @@
           </div>
 
           <div class="field">
+            <label for="historicoObjetosProibidos">Histórico de objetos proibidos da torcida (0 a 1)</label>
+            <input id="historicoObjetosProibidos" name="historicoObjetosProibidos" type="number" min="0" max="1" step="0.01" value="0" required>
+          </div>
+
+          <div class="field">
             <label for="torcidaUnica">Torcida única</label>
             <select id="torcidaUnica" name="torcidaUnica" required>
               <option value="nao">Não</option>
@@ -1175,6 +1225,7 @@
         alcoolLiberado: 0.22,
         jecrim: 0.18,
         conflitoTorcidaClube: 1.15,
+        historicoObjetosProibidos: 0.35,
         torcidaUnica: 0.2,
         protocoloPoliciamento: 0.32,
         riscoSeguranca: 0.8,
@@ -1203,6 +1254,7 @@
         alcoolLiberado: 0.14,
         jecrim: 0.12,
         conflitoTorcidaClube: 1.2,
+        historicoObjetosProibidos: 0.45,
         torcidaUnica: 0.16,
         protocoloPoliciamento: 0.22,
         riscoSeguranca: 1.01,
@@ -1231,6 +1283,7 @@
         alcoolLiberado: 0.18,
         jecrim: 0.16,
         conflitoTorcidaClube: 0.95,
+        historicoObjetosProibidos: 0.42,
         torcidaUnica: 0.18,
         protocoloPoliciamento: 0.36,
         riscoSeguranca: 0.52,
@@ -1769,7 +1822,7 @@
       return {
         risco,
         fontes: [],
-        resumo: `Analise local para ${factors.equipesEnvolvidas} em ${factors.localEvento}. Risco ${nivel}, estimado por ${modelo.modelo.nome.toLowerCase()} com publico, historico pesquisado, rivalidade, tabela, campeonato, dia, meteorologia, conflitos, seguranca privada, complexidade do local e sinais nas observacoes.`,
+        resumo: `Analise local para ${factors.equipesEnvolvidas} em ${factors.localEvento}. Risco ${nivel}, estimado por ${modelo.modelo.nome.toLowerCase()} com publico, historico pesquisado, rivalidade, tabela, campeonato, dia, meteorologia, conflitos, historico de objetos proibidos, seguranca privada, complexidade do local e sinais nas observacoes.`,
         detalhes: gerarDetalhesAnalise(factors)
       };
     }
@@ -1851,6 +1904,7 @@
         'rivalidadeEquipes',
         'posicaoTabela',
         'conflitoTorcidaClube',
+        'historicoObjetosProibidos',
         'segurancasPrivados',
         'segurancasRecomendados'
       ].forEach((field) => {
@@ -1976,6 +2030,7 @@
         alcoolLiberado,
         jecrim,
         conflitoTorcidaClube: limitarNumero(factors.conflitoTorcidaClube, 0, 1),
+        historicoObjetosProibidos: limitarNumero(factors.historicoObjetosProibidos, 0, 1),
         torcidaUnica,
         protocoloPoliciamento,
         riscoSeguranca,
@@ -2060,6 +2115,7 @@
         `Escopo do modelo: ${modelo.modelo.escopo}`,
         modelo.modelo.fonte ? `Base histórica: ${modelo.modelo.fonte} (${modelo.modelo.jogos} jogos filtrados; ${modelo.modelo.riscoAlto} classificados como risco alto).` : 'Base histórica específica: não aplicada ao adversário/local informado.',
         'Equação: P(risco) = 1 / (1 + exp(-z))',
+        'Padrão matemático: cada variável pré-jogo é convertida para valor x entre 0 e 1; sua contribuição no logit é beta x x; o z final é intercepto + soma das contribuições.',
         `Logit z: ${modelo.z.toFixed(3)}`,
         `Probabilidade estimada: ${(modelo.probabilidade * 100).toFixed(1)}%`,
         modelo.modelo === BAHIA_GENERAL_HISTORICAL_MODEL
@@ -2080,6 +2136,7 @@
         `Venda/liberação de álcool: ${formatarValor(factors.alcoolLiberado)}`,
         `JECRIM no evento: ${formatarValor(factors.jecrim)}`,
         `Conflitos torcida x clube: ${(factors.conflitoTorcidaClube * 100).toFixed(0)}%`,
+        `Histórico de objetos proibidos da torcida: ${(limitarNumero(factors.historicoObjetosProibidos, 0, 1) * 100).toFixed(0)}%`,
         `Torcida única: ${formatarValor(factors.torcidaUnica)}`,
         `Protocolo de policiamento: ${formatarValor(factors.protocoloPoliciamento)}`,
         `Seguranças privados: ${factors.segurancasPrivados.toLocaleString('pt-BR')}`,
@@ -2158,6 +2215,22 @@
           titulo: 'Torcida única não elimina risco',
           detalhe: 'Torcida única reduz confronto entre torcidas, mas não elimina tensão interna, protestos ou conflito torcida x clube.',
           acao: 'Manter monitoramento de setores organizados, chegada de grupos e reação ao resultado.'
+        });
+      }
+
+      if (variaveis.historicoObjetosProibidos >= 0.66) {
+        alertas.push({
+          nivel: variaveis.rivalidadeEquipes >= 0.7 || variaveis.publico >= 0.6 ? 'critico' : 'atencao',
+          titulo: 'Histórico de objetos proibidos da torcida',
+          detalhe: 'A variável indica recorrência prévia de porte ou tentativa de entrada com itens proibidos, sem tratar ocorrência futura como fato confirmado.',
+          acao: 'Reforçar revista, inspeção de bandeiras, instrumentos, faixas, mochilas e monitoramento de grupos com histórico operacional.'
+        });
+      } else if (variaveis.historicoObjetosProibidos >= 0.33) {
+        alertas.push({
+          nivel: 'atencao',
+          titulo: 'Histórico moderado de objetos proibidos',
+          detalhe: 'Há sinal histórico suficiente para elevar atenção nos filtros, mantendo proporcionalidade na análise.',
+          acao: 'Aplicar revista orientada por risco, registrar achados e alimentar a base pós-evento.'
         });
       }
 
@@ -2333,6 +2406,8 @@
           </div>
         </div>
 
+        ${renderExplicacaoMatematica(modelo)}
+
         ${renderValidacoesOperacionais(validacoesOperacionais)}
 
         <div class="operational-plan">
@@ -2403,6 +2478,34 @@
       if (persistir) {
         salvarAnaliseHistorico(data);
       }
+    }
+
+    function renderExplicacaoMatematica(modelo) {
+      const itens = montarContribuicoesGrafico(modelo);
+      const linhas = itens.map((item) => `
+        <div class="math-row">
+          <strong>${escaparHTML(item.label)}</strong>
+          <span>${item.valor.toFixed(2)}</span>
+          <span>${item.coeficiente.toFixed(2)}</span>
+          <span>${item.contribuicao.toFixed(3)}</span>
+        </div>
+      `).join('');
+
+      return `
+        <div class="math-panel">
+          <h3>Padrão matemático das variáveis pré-jogo</h3>
+          <p>As entradas são normalizadas em escala 0 a 1 antes do cálculo. A regressão preserva a equação <strong>P = 1 / (1 + exp(-z))</strong>, onde <strong>z = intercepto + soma(beta x variável)</strong>.</p>
+          <div class="math-table">
+            <div class="math-row math-head">
+              <span>Variável</span>
+              <span>x</span>
+              <span>beta</span>
+              <span>beta x x</span>
+            </div>
+            ${linhas}
+          </div>
+        </div>
+      `;
     }
 
     async function gerarPDFAnalise() {
@@ -2482,13 +2585,15 @@
         variaveis.posicaoTabela >= 0.7 ? 'Impacto competitivo elevado pode intensificar reação a placar, arbitragem e resultado.' : null,
         variaveis.meteorologia >= 0.6 ? 'Meteorologia exige contingência para filas, áreas abertas, drenagem e comunicação.' : null,
         variaveis.riscoSeguranca > 0.05 ? `Cobertura privada abaixo da referência 1/100; efetivo mínimo calculado: ${efetivoBase.toLocaleString('pt-BR')}.` : 'Cobertura de segurança privada compatível com a referência 1/100.',
-        variaveis.conflitoTorcidaClube >= 0.5 ? 'Conflito torcida x clube deve ser acompanhado por mediação e resposta rápida.' : null
+        variaveis.conflitoTorcidaClube >= 0.5 ? 'Conflito torcida x clube deve ser acompanhado por mediação e resposta rápida.' : null,
+        variaveis.historicoObjetosProibidos >= 0.33 ? 'Histórico de objetos proibidos exige filtros de revista mais direcionados e registro operacional dos achados.' : null
       ]);
 
       const acoesObrigatorias = removerTextosDuplicados([
         `Planejar efetivo privado recomendado de ${efetivoRecomendado.toLocaleString('pt-BR')} profissionais para o cenário analisado.`,
         'Validar sala de controle, comunicação rádio, rotas de emergência, atendimento médico e responsáveis por decisão.',
         'Formalizar matriz de responsabilidades por fase: montagem, pré-entrada, entrada, jogo, evacuação e fechamento.',
+        variaveis.historicoObjetosProibidos >= 0.33 ? 'Definir procedimento de inspeção para materiais de torcida, instrumentos, faixas, mastros, mochilas e itens volumosos.' : null,
         data.risco >= 70 ? 'Acionar reunião de coordenação com segurança pública, operação do estádio, clube mandante e supervisão privada.' : null,
         cenarioMitigado.reducao > 0 ? `Aplicar medidas mitigadoras com potencial de redução de ${cenarioMitigado.reducao} ponto(s) no risco.` : 'Manter monitoramento preventivo e registro operacional para calibração futura.'
       ]);
@@ -2810,6 +2915,7 @@
       const timestamp = new Date().toISOString().slice(0, 19).replaceAll(':', '-');
       const resultSummaryHTML = clone.querySelector('.result-summary')?.outerHTML || '';
       const chartHTML = clone.querySelector('.chart-section')?.outerHTML || '';
+      const mathHTML = clone.querySelector('.math-panel')?.outerHTML || '';
       const validationHTML = clone.querySelector('.validation-panel')?.outerHTML || '';
       const operationalHTML = clone.querySelector('.operational-plan')?.outerHTML || '';
       const mitigationPanel = clone.querySelector('.mitigation-panel');
@@ -3290,7 +3396,14 @@
   <main class="report-page">
     <div class="report-corner report-corner-small"></div>
     <section class="report-content">
+      ${mathHTML}
       ${validationHTML}
+    </section>
+  </main>
+
+  <main class="report-page">
+    <div class="report-corner report-corner-small"></div>
+    <section class="report-content">
       ${operationalHTML}
       <div class="mitigation-panel">
         <h3>Ações recomendadas para mitigação por fase</h3>
@@ -3398,7 +3511,7 @@
       return {
         risco: riscoAjustado,
         reducao: Math.max(riscoAtual - riscoAjustado, 0),
-        descricao: 'A simulação mantém fatores não controláveis, como posição de tabela, campeonato, dia, horário, mandante e histórico, e ajusta apenas fatores mitigáveis como déficit de segurança, conflitos, protocolo de policiamento, JECRIM e sinais críticos nas observações.'
+        descricao: 'A simulação mantém fatores não controláveis, como posição de tabela, campeonato, dia, horário, mandante, histórico das equipes e histórico de objetos proibidos, e ajusta apenas fatores mitigáveis como déficit de segurança, conflitos, protocolo de policiamento, JECRIM e sinais críticos nas observações.'
       };
     }
 
@@ -3410,6 +3523,7 @@
         riscoSeguranca: 'cobertura de segurança adequada',
         meteorologia: 'meteorologia favorável',
         jecrim: 'JECRIM previsto',
+        historicoObjetosProibidos: 'sem histórico relevante de objetos proibidos',
         protocoloPoliciamento: 'protocolo de policiamento obedecido'
       };
 
@@ -3444,6 +3558,8 @@
       const alcoolSensivel = variaveis.alcoolLiberado >= 0.4;
       const semJecrim = variaveis.jecrim >= 0.4;
       const protocoloCritico = variaveis.protocoloPoliciamento >= 0.6;
+      const objetosProibidos = variaveis.historicoObjetosProibidos >= 0.33;
+      const objetosProibidosAlto = variaveis.historicoObjetosProibidos >= 0.66;
 
       return [
         {
@@ -3454,6 +3570,7 @@
             'Conferir rotas de serviço, docas, áreas técnicas, geradores, comunicação, iluminação e pontos de emergência.',
             variaveis.riscoSeguranca > 0.05 ? `Ajustar escala de segurança privada antes da operação: referência 1/100 exige ${cobertura.necessarios.toLocaleString('pt-BR')} seguranças; déficit atual de ${deficit.toLocaleString('pt-BR')}.` : 'Confirmar que a escala de segurança privada atende à referência 1/100.',
             protocoloCritico ? 'Revisar protocolo de policiamento, postos, rotas e matriz de responsabilidade antes de liberar a operação.' : null,
+            objetosProibidos ? 'Incluir no briefing o histórico de objetos proibidos e definir itens sensíveis por torcida, setor e tipo de material autorizado.' : null,
             observacaoCritica ? 'Transformar sinais críticos das observações em ordens de serviço com responsável, prazo e canal de acionamento.' : 'Validar checklist de riscos sem pendências críticas nas observações.',
             meteoCritica ? 'Preparar plano de contingência meteorológica para estruturas temporárias, áreas abertas, drenagem e comunicação ao público.' : null
           ])
@@ -3465,6 +3582,7 @@
             'Monitorar formação de filas e aglomerações nos filtros de entrada do anel de segurança.',
             entornoComplexo ? 'Reforçar pontos de concentração no entorno, vias públicas, estacionamentos, praças e gargalos de acesso.' : 'Manter patrulhamento preventivo no entorno e pontos de aproximação.',
             rivalidadeAlta ? 'Separar fluxos de torcidas desde a chegada, com barreiras, orientação visual e equipes posicionadas nos pontos de cruzamento.' : 'Confirmar orientação de fluxo único e comunicação clara nos acessos.',
+            objetosProibidosAlto ? 'Reforçar filtros externos para mochilas, bandeiras, instrumentos, faixas e materiais volumosos antes da chegada às catracas.' : null,
             conflitoAtivo ? 'Acompanhar manifestações ou tensão torcida x clube com equipe de mediação e resposta rápida.' : null,
             alcoolSensivel ? 'Reforçar supervisão de bares, consumo de álcool, sanitários e pontos de concentração antes da entrada.' : null,
             grandePublico ? 'Abrir pontos de orientação, hidratação, banheiros e triagem para reduzir pressão sobre os filtros.' : null
@@ -3477,6 +3595,7 @@
             'Dimensionar revista, catracas, filas, acessibilidade e orientação para evitar compressão de público.',
             variaveis.riscoSeguranca > 0.05 ? 'Reposicionar efetivo para filtros mais carregados e priorizar reforço onde houver déficit de cobertura.' : 'Manter supervisão de cobertura dos postos 1/100 durante a entrada.',
             rivalidadeAlta ? 'Manter setores e acessos segregados, com escolta e horários diferenciados para grupos visitantes quando aplicável.' : null,
+            objetosProibidos ? 'Aplicar revista orientada por risco e registrar achados de objetos proibidos para retroalimentar a base histórica.' : null,
             semJecrim ? 'Confirmar fluxo alternativo de registro e encaminhamento de ocorrências pela ausência de JECRIM no evento.' : null,
             meteoCritica ? 'Comunicar condição meteorológica, rotas cobertas e procedimentos de abrigo ou atraso operacional.' : null
           ])
@@ -3488,6 +3607,7 @@
             'Monitorar setores, câmeras, comunicação rádio, atendimento médico e pontos de maior densidade.',
             variaveis.posicaoTabela >= 0.7 ? 'Reforçar atenção a momentos críticos do placar, decisões de arbitragem e mudanças de resultado por impacto competitivo elevado.' : 'Manter vigilância por gatilhos esportivos durante a partida.',
             conflitoAtivo || rivalidadeAlta ? 'Manter equipe de resposta rápida próxima aos setores sensíveis e pontos de separação de torcidas.' : null,
+            objetosProibidos ? 'Monitorar uso indevido de itens que tenham entrado de forma autorizada, como mastros, instrumentos, faixas e materiais de torcida.' : null,
             observacaoCritica ? 'Acompanhar em tempo real os riscos destacados nas observações iniciais.' : null
           ])
         },
@@ -3508,6 +3628,7 @@
             'Confirmar evacuação total por setor, sanitários, áreas técnicas, camarotes, imprensa, campo e áreas de serviço.',
             'Registrar ocorrências, tempos de resposta, falhas operacionais e lições aprendidas para recalibrar a análise futura.',
             variaveis.riscoSeguranca > 0.05 ? 'Registrar impacto do déficit de segurança privada e ajustar planejamento de efetivo para o próximo evento.' : 'Registrar conformidade da cobertura 1/100 no relatório final.',
+            objetosProibidos ? 'Registrar quantidade, tipo, local e torcida associada a objetos proibidos encontrados para calibrar a variável em eventos futuros.' : null,
             observacaoCritica || conflitoAtivo ? 'Documentar incidentes e encaminhar medidas corretivas com responsáveis definidos.' : null
           ])
         }
@@ -3538,6 +3659,7 @@
         alcoolLiberado: 'Álcool',
         jecrim: 'JECRIM',
         conflitoTorcidaClube: 'Conflito torcida x clube',
+        historicoObjetosProibidos: 'Objetos proibidos',
         torcidaUnica: 'Torcida única',
         protocoloPoliciamento: 'Protocolo policiamento',
         riscoSeguranca: 'Déficit de segurança',
@@ -3554,6 +3676,7 @@
             key,
             label: labels[key] || key,
             valor,
+            coeficiente,
             contribuicao,
             percentual: Math.round(valor * 100),
             largura: Math.round(Math.min(contribuicao / 1.25, 1) * 100)

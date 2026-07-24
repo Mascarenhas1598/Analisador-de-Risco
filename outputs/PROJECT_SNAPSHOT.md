@@ -43,6 +43,8 @@ Estado ancorado em `PROJECT_ANCHOR.md`.
 - Efetivo de seguranca privada automatizado pela referencia 1/100: calcula minimo recomendado, deficit ou sobra operacional e alimenta a analise final.
 - Campo "Dia de semana" preenchido automaticamente a partir da data do jogo.
 - Novas variaveis pre-jogo incluidas no formulario e na regressao com pesos conservadores: horario da partida, mandante, venda/liberacao de alcool, JECRIM, torcida unica e protocolo de policiamento.
+- Variavel pre-jogo "Historico de objetos proibidos da torcida (0 a 1)" incluida no formulario e na regressao, mantendo o mesmo padrao matematico das demais variaveis.
+- Painel "Padrao matematico das variaveis pre-jogo" incluido no resultado, exibindo valor normalizado, coeficiente e contribuicao de cada variavel no logit.
 - As novas variaveis aparecem nos detalhes da analise, no grafico de contribuicao e nas validacoes operacionais, mantendo ocorrencias reais apenas na secao Pos-evento.
 - Validacao operacional automatica incluida: gera alertas criticos/atencao/OK para deficit de efetivo, rivalidade elevada, jogo decisivo, meteorologia adversa, grande publico com deficit, conflito torcida x clube e sinais criticos nas observacoes.
 - Painel "Validacao operacional automatica" exibido no resultado e incorporado ao PDF antes do plano operacional.
@@ -69,6 +71,7 @@ Estado ancorado em `PROJECT_ANCHOR.md`.
   - dia de semana: gera `diaSemana`;
   - meteorologia: gera `meteorologia`;
   - conflitos torcida x clube: gera `conflitoTorcidaClube`;
+  - historico de objetos proibidos da torcida: gera `historicoObjetosProibidos`;
   - segurancas privados: gera `riscoSeguranca` pela referencia 1 seguranca / 100 torcedores;
   - observacoes: gera `sinaisObservacoes`.
 - Login configurado por variaveis de ambiente `APP_USERNAME` e `APP_PASSWORD`, sem exibicao na tela principal e sem credenciais no HTML.

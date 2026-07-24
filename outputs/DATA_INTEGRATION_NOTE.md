@@ -21,8 +21,9 @@ Ordem de aplicacao:
 - `Vitoria da Conquista` nao deve acionar o modelo Ba-Vi.
 - Colunas de ocorrencias, como furto, vias de fato, agressao e invasao de gramado, sao dados pos-evento. Elas servem para validacao e recalibracao futura, mas nao devem ser usadas como variaveis preditoras antes do jogo.
 - `EFETIVO TOTAL` representa efetivo operacional/policial na base historica e nao deve ser confundido automaticamente com segurancas privados empregados.
-- Variaveis pre-jogo aproveitadas no calculo atual: horario da partida, mandante, venda/liberacao de alcool, JECRIM, torcida unica e protocolo de policiamento.
+- Variaveis pre-jogo aproveitadas no calculo atual: horario da partida, mandante, venda/liberacao de alcool, JECRIM, torcida unica, protocolo de policiamento e historico de objetos proibidos da torcida.
 - Essas variaveis entram na regressao com pesos conservadores e auditaveis, para aumentar robustez sem alterar a metodologia de calculo.
+- O historico de objetos proibidos deve representar indicio pre-jogo baseado em base historica, busca assistida ou avaliacao operacional documentada. A ocorrencia real do evento segue reservada ao Pos-evento para validacao e calibracao futura.
 
 ## Uso recomendado
 
