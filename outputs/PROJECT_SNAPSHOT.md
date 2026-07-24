@@ -55,6 +55,9 @@ Estado ancorado em `PROJECT_ANCHOR.md`.
 - Campo "Dia de semana" preenchido automaticamente a partir da data do jogo.
 - Novas variaveis pre-jogo incluidas no formulario e na regressao com pesos conservadores: horario da partida, mandante, venda/liberacao de alcool, JECRIM, torcida unica e protocolo de policiamento.
 - Variavel pre-jogo "Historico de objetos proibidos da torcida (0 a 1)" incluida no formulario e na regressao, mantendo o mesmo padrao matematico das demais variaveis.
+- Variavel pre-jogo "Relacao entre torcidas" incluida com opcoes nao informada, neutra, aliada, rivalidade/inimizade e inimizade historica com registros.
+- A relacao entre torcidas entra na regressao com coeficientes moderados: modelo geral 0.28, Bahia geral 0.22 e Ba-Vi 0.18, para evitar dupla contagem em jogos que ja possuem rivalidade/historico forte.
+- A relacao entre torcidas tambem ajusta tipicidades relacionais, principalmente briga no entorno e briga interna, e reforca arremesso apenas de forma pequena quando ha inimizade historica.
 - Painel "Padrao matematico das variaveis pre-jogo" incluido no resultado, exibindo valor normalizado, coeficiente e contribuicao de cada variavel no logit.
 - As novas variaveis aparecem nos detalhes da analise, no grafico de contribuicao e nas validacoes operacionais, mantendo ocorrencias reais apenas na secao Pos-evento.
 - Validacao operacional automatica incluida: gera alertas criticos/atencao/OK para deficit de efetivo, rivalidade elevada, jogo decisivo, meteorologia adversa, grande publico com deficit, conflito torcida x clube e sinais criticos nas observacoes.
@@ -77,6 +80,7 @@ Estado ancorado em `PROJECT_ANCHOR.md`.
   - local do evento: gera `complexidadeLocal`;
   - publico estimado: gera `publico`;
   - rivalidade entre equipes: gera `rivalidadeEquipes`;
+  - relacao entre torcidas: gera `relacaoTorcidas`;
   - posicao de tabela: gera `posicaoTabela`;
   - tipo de campeonato: gera `tipoCampeonato`;
   - dia de semana: gera `diaSemana`;

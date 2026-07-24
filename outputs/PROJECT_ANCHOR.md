@@ -25,6 +25,7 @@ Estado ancorado como versao atual do **Analisador de Risco - NM Engenharia e Con
 - Dia de semana preenchido automaticamente pela data do jogo.
 - Variaveis pre-jogo da base geral incluidas com impacto conservador na regressao: horario, mandante, alcool, JECRIM, torcida unica e protocolo de policiamento.
 - Variavel pre-jogo `historicoObjetosProibidos` incluida em padrao matematico 0 a 1, com coeficientes conservadores nos modelos geral, Bahia geral e Ba-Vi.
+- Variavel pre-jogo `relacaoTorcidas` incluida como fator relacional complementar, com peso moderado e sem substituir rivalidade entre equipes, historico pesquisado ou conflito torcida x clube.
 - Painel autoexplicativo do padrao matematico incluido: valor normalizado `x`, coeficiente `beta` e contribuicao `beta x x` para cada variavel da regressao.
 - Ocorrencias reais continuam reservadas ao Pos-evento, evitando circularidade no calculo pre-jogo.
 - Validacao operacional automatica com alertas criticos/atencao/OK antes do plano operacional.

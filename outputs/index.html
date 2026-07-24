@@ -1017,6 +1017,17 @@
           </div>
 
           <div class="field">
+            <label for="relacaoTorcidas">Relação entre torcidas</label>
+            <select id="relacaoTorcidas" name="relacaoTorcidas" required>
+              <option value="nao_informada">Não informada</option>
+              <option value="neutra">Neutra</option>
+              <option value="aliada">Aliada</option>
+              <option value="inimizade">Rivalidade/inimizade</option>
+              <option value="inimizade_historica">Inimizade histórica com registros</option>
+            </select>
+          </div>
+
+          <div class="field">
             <label for="posicaoTabela">Impacto da posição na tabela (0 a 1)</label>
             <input id="posicaoTabela" name="posicaoTabela" type="number" min="0" max="1" step="0.01" required>
           </div>
@@ -1266,6 +1277,11 @@
         'Pode ser estimado automaticamente pelo jogo, local e contexto.': 'Can be estimated automatically from match, venue and context.',
         'Estimar público': 'Estimate attendance',
         'Rivalidade entre equipes (0 a 1)': 'Team rivalry (0 to 1)',
+        'Relação entre torcidas': 'Relationship between supporter groups',
+        'Neutra': 'Neutral',
+        'Aliada': 'Allied',
+        'Rivalidade/inimizade': 'Rivalry/hostility',
+        'Inimizade histórica com registros': 'Historical hostility with records',
         'Impacto da posição na tabela (0 a 1)': 'Table position impact (0 to 1)',
         'Tipo de campeonato': 'Competition type',
         'Selecione': 'Select',
@@ -1398,6 +1414,11 @@
         'Pode ser estimado automaticamente pelo jogo, local e contexto.': 'Puede estimarse automáticamente según partido, lugar y contexto.',
         'Estimar público': 'Estimar público',
         'Rivalidade entre equipes (0 a 1)': 'Rivalidad entre equipos (0 a 1)',
+        'Relação entre torcidas': 'Relación entre hinchadas',
+        'Neutra': 'Neutral',
+        'Aliada': 'Aliada',
+        'Rivalidade/inimizade': 'Rivalidad/enemistad',
+        'Inimizade histórica com registros': 'Enemistad histórica con registros',
         'Impacto da posição na tabela (0 a 1)': 'Impacto de posición en la tabla (0 a 1)',
         'Tipo de campeonato': 'Tipo de campeonato',
         'Selecione': 'Seleccione',
@@ -1648,6 +1669,7 @@
         jecrim: 0.18,
         conflitoTorcidaClube: 1.15,
         historicoObjetosProibidos: 0.35,
+        relacaoTorcidas: 0.28,
         torcidaUnica: 0.2,
         protocoloPoliciamento: 0.32,
         riscoSeguranca: 0.8,
@@ -1677,6 +1699,7 @@
         jecrim: 0.12,
         conflitoTorcidaClube: 1.2,
         historicoObjetosProibidos: 0.45,
+        relacaoTorcidas: 0.18,
         torcidaUnica: 0.16,
         protocoloPoliciamento: 0.22,
         riscoSeguranca: 1.01,
@@ -1706,6 +1729,7 @@
         jecrim: 0.16,
         conflitoTorcidaClube: 0.95,
         historicoObjetosProibidos: 0.42,
+        relacaoTorcidas: 0.22,
         torcidaUnica: 0.18,
         protocoloPoliciamento: 0.36,
         riscoSeguranca: 0.52,
@@ -2437,6 +2461,13 @@
         nao_obedece: 0.62,
         nao_informado: 0.32
       });
+      const relacaoTorcidas = pesoPorValor(factors.relacaoTorcidas, {
+        nao_informada: 0.2,
+        neutra: 0.25,
+        aliada: 0.05,
+        inimizade: 0.65,
+        inimizade_historica: 0.85
+      });
       const complexidadeLocal = calcularComplexidadeLocal(factors.localEvento);
       const sinaisObservacoes = calcularSinaisObservacoes(factors.observacoes);
 
@@ -2454,6 +2485,7 @@
         jecrim,
         conflitoTorcidaClube: limitarNumero(factors.conflitoTorcidaClube, 0, 1),
         historicoObjetosProibidos: limitarNumero(factors.historicoObjetosProibidos, 0, 1),
+        relacaoTorcidas,
         torcidaUnica,
         protocoloPoliciamento,
         riscoSeguranca,
@@ -2558,6 +2590,7 @@
         factors.publicoEstimadoFonte ? `Base da estimativa de público: ${factors.publicoEstimadoFonte}` : 'Base da estimativa de público: informado manualmente.',
         `Histórico pesquisado: ${(factors.historicoEquipesScore * 100).toFixed(0)}%`,
         `Rivalidade: ${(factors.rivalidadeEquipes * 100).toFixed(0)}%`,
+        `Relação entre torcidas: ${formatarValor(factors.relacaoTorcidas)} (${(variaveis.relacaoTorcidas * 100).toFixed(0)}%)`,
         `Posição de tabela: ${(factors.posicaoTabela * 100).toFixed(0)}%`,
         `Complexidade do local: ${(variaveis.complexidadeLocal * 100).toFixed(0)}%`,
         `Campeonato: ${formatarValor(factors.tipoCampeonato)}`,
@@ -2650,6 +2683,15 @@
           titulo: 'Torcida única não elimina risco',
           detalhe: 'Torcida única reduz confronto entre torcidas, mas não elimina tensão interna, protestos ou conflito torcida x clube.',
           acao: 'Manter monitoramento de setores organizados, chegada de grupos e reação ao resultado.'
+        });
+      }
+
+      if (variaveis.relacaoTorcidas >= 0.65) {
+        alertas.push({
+          nivel: variaveis.relacaoTorcidas >= 0.85 && (variaveis.rivalidadeEquipes >= 0.5 || variaveis.historicoEquipes >= 0.5) ? 'critico' : 'atencao',
+          titulo: 'Relação hostil entre torcidas',
+          detalhe: 'A informação reforça risco relacional entre grupos de torcedores sem substituir rivalidade entre clubes, histórico pesquisado ou conflito torcida x clube.',
+          acao: 'Confirmar separação de fluxos, rotas de chegada/saída, pontos de barreira e monitoramento de grupos organizados.'
         });
       }
 
@@ -2784,7 +2826,7 @@
 
     function formatarValor(value) {
       if (!value) return 'não informado';
-      return value.charAt(0).toUpperCase() + value.slice(1).replaceAll('-', ' ');
+      return value.charAt(0).toUpperCase() + value.slice(1).replaceAll('-', ' ').replaceAll('_', ' ');
     }
 
     function renderResultado(data, options = {}) {
@@ -3121,9 +3163,10 @@
       const v = modelo.variaveis;
       const riscoGeral = limitarNumero(score / 100, 0, 1);
       const evidenciaPorTipicidade = evidenciaExterna.porTipicidade || {};
-      const tensaoTorcida = limitarNumero((v.rivalidadeEquipes * 0.45) + (v.conflitoTorcidaClube * 0.35) + (v.historicoEquipes * 0.2), 0, 1);
+      const tensaoTorcida = limitarNumero((v.rivalidadeEquipes * 0.38) + (v.conflitoTorcidaClube * 0.3) + (v.historicoEquipes * 0.17) + (v.relacaoTorcidas * 0.15), 0, 1);
       const filtroFragil = limitarNumero((v.protocoloPoliciamento * 0.38) + (v.riscoSeguranca * 0.32) + (v.historicoObjetosProibidos * 0.3), 0, 1);
       const jogoSensivel = limitarNumero((v.posicaoTabela * 0.34) + (v.tipoCampeonato * 0.3) + (v.publico * 0.22) + (v.horarioPartida * 0.14), 0, 1);
+      const inimizadeHistorica = v.relacaoTorcidas >= 0.85 ? 0.22 : v.relacaoTorcidas >= 0.65 ? 0.1 : 0;
 
       const incidentes = [
         {
@@ -3147,6 +3190,7 @@
             [jogoSensivel, 0.12],
             [v.sinaisObservacoes, 0.1],
             [filtroFragil, 0.08],
+            [inimizadeHistorica, 0.12],
             [valorEvidenciaTipicidade(evidenciaPorTipicidade, 'arremessoObjetos'), 1]
           ]),
           foco: 'Revista, controle de itens autorizados, vigilância de setores sensíveis e resposta rápida.'
@@ -4354,6 +4398,7 @@
     function montarFatoresBaixaPressao(modelo) {
       const labels = {
         rivalidadeEquipes: 'rivalidade baixa',
+        relacaoTorcidas: 'relação entre torcidas sem hostilidade',
         conflitoTorcidaClube: 'conflito torcida x clube baixo',
         sinaisObservacoes: 'sem sinais críticos nas observações',
         riscoSeguranca: 'cobertura de segurança adequada',
@@ -4385,6 +4430,7 @@
       const cobertura = calcularCoberturaSegurancaPrivada(factors.publicoEstimado, factors.segurancasPrivados);
       const deficit = Math.max(cobertura.necessarios - factors.segurancasPrivados, 0);
       const rivalidadeAlta = variaveis.rivalidadeEquipes >= 0.7 || variaveis.historicoEquipes >= 0.7;
+      const relacaoHostil = variaveis.relacaoTorcidas >= 0.65;
       const conflitoAtivo = variaveis.conflitoTorcidaClube >= 0.5;
       const meteoCritica = variaveis.meteorologia >= 0.6;
       const entornoComplexo = variaveis.complexidadeLocal >= 0.5;
@@ -4406,6 +4452,7 @@
             'Conferir rotas de serviço, docas, áreas técnicas, geradores, comunicação, iluminação e pontos de emergência.',
             variaveis.riscoSeguranca > 0.05 ? `Ajustar escala de segurança privada antes da operação: referência 1/100 exige ${cobertura.necessarios.toLocaleString('pt-BR')} seguranças; déficit atual de ${deficit.toLocaleString('pt-BR')}.` : 'Confirmar que a escala de segurança privada atende à referência 1/100.',
             protocoloCritico ? 'Revisar protocolo de policiamento, postos, rotas e matriz de responsabilidade antes de liberar a operação.' : null,
+            relacaoHostil ? 'Incluir relação hostil entre torcidas no briefing, sem substituir a análise de rivalidade entre clubes.' : null,
             objetosProibidos ? 'Incluir no briefing o histórico de objetos proibidos e definir itens sensíveis por torcida, setor e tipo de material autorizado.' : null,
             observacaoCritica ? 'Transformar sinais críticos das observações em ordens de serviço com responsável, prazo e canal de acionamento.' : 'Validar checklist de riscos sem pendências críticas nas observações.',
             meteoCritica ? 'Preparar plano de contingência meteorológica para estruturas temporárias, áreas abertas, drenagem e comunicação ao público.' : null
@@ -4417,7 +4464,7 @@
           acoes: removerTextosDuplicados([
             'Monitorar formação de filas e aglomerações nos filtros de entrada do anel de segurança.',
             entornoComplexo ? 'Reforçar pontos de concentração no entorno, vias públicas, estacionamentos, praças e gargalos de acesso.' : 'Manter patrulhamento preventivo no entorno e pontos de aproximação.',
-            rivalidadeAlta ? 'Separar fluxos de torcidas desde a chegada, com barreiras, orientação visual e equipes posicionadas nos pontos de cruzamento.' : 'Confirmar orientação de fluxo único e comunicação clara nos acessos.',
+            rivalidadeAlta || relacaoHostil ? 'Separar fluxos de torcidas desde a chegada, com barreiras, orientação visual e equipes posicionadas nos pontos de cruzamento.' : 'Confirmar orientação de fluxo único e comunicação clara nos acessos.',
             objetosProibidosAlto ? 'Reforçar filtros externos para mochilas, bandeiras, instrumentos, faixas e materiais volumosos antes da chegada às catracas.' : null,
             conflitoAtivo ? 'Acompanhar manifestações ou tensão torcida x clube com equipe de mediação e resposta rápida.' : null,
             alcoolSensivel ? 'Reforçar supervisão de bares, consumo de álcool, sanitários e pontos de concentração antes da entrada.' : null,
@@ -4430,7 +4477,7 @@
           acoes: removerTextosDuplicados([
             'Dimensionar revista, catracas, filas, acessibilidade e orientação para evitar compressão de público.',
             variaveis.riscoSeguranca > 0.05 ? 'Reposicionar efetivo para filtros mais carregados e priorizar reforço onde houver déficit de cobertura.' : 'Manter supervisão de cobertura dos postos 1/100 durante a entrada.',
-            rivalidadeAlta ? 'Manter setores e acessos segregados, com escolta e horários diferenciados para grupos visitantes quando aplicável.' : null,
+            rivalidadeAlta || relacaoHostil ? 'Manter setores e acessos segregados, com escolta e horários diferenciados para grupos visitantes quando aplicável.' : null,
             objetosProibidos ? 'Aplicar revista orientada por risco e registrar achados de objetos proibidos para retroalimentar a base histórica.' : null,
             semJecrim ? 'Confirmar fluxo alternativo de registro e encaminhamento de ocorrências pela ausência de JECRIM no evento.' : null,
             meteoCritica ? 'Comunicar condição meteorológica, rotas cobertas e procedimentos de abrigo ou atraso operacional.' : null
@@ -4442,7 +4489,7 @@
           acoes: removerTextosDuplicados([
             'Monitorar setores, câmeras, comunicação rádio, atendimento médico e pontos de maior densidade.',
             variaveis.posicaoTabela >= 0.7 ? 'Reforçar atenção a momentos críticos do placar, decisões de arbitragem e mudanças de resultado por impacto competitivo elevado.' : 'Manter vigilância por gatilhos esportivos durante a partida.',
-            conflitoAtivo || rivalidadeAlta ? 'Manter equipe de resposta rápida próxima aos setores sensíveis e pontos de separação de torcidas.' : null,
+            conflitoAtivo || rivalidadeAlta || relacaoHostil ? 'Manter equipe de resposta rápida próxima aos setores sensíveis e pontos de separação de torcidas.' : null,
             objetosProibidos ? 'Monitorar uso indevido de itens que tenham entrado de forma autorizada, como mastros, instrumentos, faixas e materiais de torcida.' : null,
             observacaoCritica ? 'Acompanhar em tempo real os riscos destacados nas observações iniciais.' : null
           ])
@@ -4452,7 +4499,7 @@
           periodo: 'Saída do público para o exterior; 10 a 20 minutos, salvo ordem de saída do público visitante',
           acoes: removerTextosDuplicados([
             'Abrir rotas de saída, manter comunicação ao público e evitar cruzamento de fluxos em escadas, rampas, portões e entorno.',
-            rivalidadeAlta ? 'Aplicar saída escalonada ou retenção operacional de público visitante quando definido pela autoridade competente.' : 'Monitorar dispersão sem retenção, salvo necessidade operacional.',
+            rivalidadeAlta || relacaoHostil ? 'Aplicar saída escalonada ou retenção operacional de público visitante quando definido pela autoridade competente.' : 'Monitorar dispersão sem retenção, salvo necessidade operacional.',
             entornoComplexo ? 'Reforçar policiamento e segurança nos pontos externos de dispersão e transporte.' : null,
             meteoCritica ? 'Evitar concentração em áreas alagadas, descobertas ou com risco meteorológico.' : null
           ])
@@ -4486,6 +4533,7 @@
         publico: 'Público',
         historicoEquipes: 'Histórico das equipes',
         rivalidadeEquipes: 'Rivalidade',
+        relacaoTorcidas: 'Relação torcidas',
         posicaoTabela: 'Posição de tabela',
         tipoCampeonato: 'Campeonato',
         diaSemana: 'Dia da semana',
@@ -4638,7 +4686,7 @@
       });
       document.getElementById('publicoEstimado').addEventListener('input', () => atualizarStatusSeguranca());
       document.getElementById('segurancasPrivados').addEventListener('input', () => atualizarStatusSeguranca());
-      ['tipoCampeonato', 'diaSemana', 'horarioPartida', 'meteorologia', 'alcoolLiberado', 'torcidaUnica', 'rivalidadeEquipes', 'posicaoTabela'].forEach((id) => {
+      ['tipoCampeonato', 'diaSemana', 'horarioPartida', 'meteorologia', 'alcoolLiberado', 'torcidaUnica', 'relacaoTorcidas', 'rivalidadeEquipes', 'posicaoTabela'].forEach((id) => {
         document.getElementById(id).addEventListener('change', () => estimarPublicoAutomatico({ somenteSeVazio: true, origem: 'digitacao' }));
       });
       document.querySelectorAll('.language-button').forEach((button) => {
