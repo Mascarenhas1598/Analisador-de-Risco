@@ -1267,6 +1267,8 @@
     const ORIGINAL_TEXT_NODES = new WeakMap();
     let idiomaAtual = localStorage.getItem('sisavaliaIdioma') || 'pt';
     let ultimaAnaliseRenderizada = null;
+    let ultimoHistoricoEquipes = null;
+    let ultimaCapacidadeLocal = null;
 
     const TRANSLATIONS = {
       en: {
@@ -1368,6 +1370,7 @@
         'Estimativa complementar ao risco geral, baseada nas variáveis pré-jogo, histórico disponível e evidências da busca assistida. Prioridades orientam planejamento operacional e não representam previsão determinística.': 'Complementary estimate to the general risk, based on pre-match variables, available history and assisted-search evidence. Priorities guide operational planning and are not deterministic predictions.',
         'Índice de evidência externa:': 'External evidence index:',
         'Evidência externa por tipicidade:': 'External evidence by incident type:',
+        'A busca assistida externa não está conectada ou não retornou fontes nesta execução; os índices externos por tipicidade foram mantidos em 0%.': 'The external assisted search is not connected or returned no sources in this run; external incident-type indexes were kept at 0%.',
         'Estimativa baseada em histórico das equipes, rivalidade, objetos proibidos, conflito torcida x clube, protocolo de policiamento e evidências externas da busca assistida.': 'Estimate based on team history, rivalry, prohibited objects, supporter x club conflict, policing protocol and external evidence from assisted search.',
         'Estimativa baseada em histórico das equipes, rivalidade, objetos proibidos, conflito torcida x clube, protocolo de policiamento e evidências externas específicas da busca assistida sobre comportamento anterior da torcida/adversário.': 'Estimate based on team history, rivalry, prohibited objects, supporter x club conflict, policing protocol and specific external assisted-search evidence about previous supporter/opponent behavior.',
         'Fatores que mais influenciam o risco': 'Factors with the strongest risk influence',
@@ -1508,6 +1511,7 @@
         'Estimativa complementar ao risco geral, baseada nas variáveis pré-jogo, histórico disponível e evidências da busca assistida. Prioridades orientam planejamento operacional e não representam previsão determinística.': 'Estimación complementaria al riesgo general, basada en variables prepartido, historial disponible y evidencias de la búsqueda asistida. Las prioridades orientan la planificación operativa y no representan predicción determinística.',
         'Índice de evidência externa:': 'Índice de evidencia externa:',
         'Evidência externa por tipicidade:': 'Evidencia externa por tipicidad:',
+        'A busca assistida externa não está conectada ou não retornou fontes nesta execução; os índices externos por tipicidade foram mantidos em 0%.': 'La búsqueda asistida externa no está conectada o no devolvió fuentes en esta ejecución; los índices externos por tipicidad se mantuvieron en 0%.',
         'Estimativa baseada em histórico das equipes, rivalidade, objetos proibidos, conflito torcida x clube, protocolo de policiamento e evidências externas da busca assistida.': 'Estimación basada en historial de equipos, rivalidad, objetos prohibidos, conflicto hinchada x club, protocolo policial y evidencias externas de la búsqueda asistida.',
         'Estimativa baseada em histórico das equipes, rivalidade, objetos proibidos, conflito torcida x clube, protocolo de policiamento e evidências externas específicas da busca assistida sobre comportamento anterior da torcida/adversário.': 'Estimación basada en historial de equipos, rivalidad, objetos prohibidos, conflicto hinchada x club, protocolo policial y evidencias externas específicas de la búsqueda asistida sobre comportamiento anterior de la hinchada/adversario.',
         'Fatores que mais influenciam o risco': 'Factores que más influyen en el riesgo',
@@ -1625,20 +1629,11 @@
       }
 
       async analisar(factors) {
-        if (isSessaoLocal()) {
-          updateAPIStatus('Analise local concluida', 'green');
-          return criarResultadoLocal(factors);
-        }
-
-        updateAPIStatus('Consultando dados externos', 'green');
-        const googleData = await this.fetchGoogleData(factors);
-
-        return {
-          risco: calcularPontuacaoRisco(factors),
-          fontes: googleData.items || [],
-          resumo: googleData.summary || 'Consulta concluida sem resumo retornado.',
-          buscaAssistidaConectada: true
-        };
+        updateAPIStatus('Consolidando busca assistida', 'green');
+        return criarResultadoLocal(factors, {
+          historico: ultimoHistoricoEquipes,
+          capacidade: ultimaCapacidadeLocal
+        });
       }
     }
 
@@ -1922,7 +1917,9 @@
         score: limitarNumero(Number(data.score ?? data.risco ?? 0.35), 0, 1),
         origem: data.origem || 'api',
         resumo: data.resumo || `Histórico consultado para ${query}.`,
-        links: Array.isArray(data.links) ? data.links : []
+        links: Array.isArray(data.links) ? data.links : [],
+        buscaStatus: data.buscaStatus || null,
+        googleStatus: data.googleStatus || null
       };
     }
 
@@ -1937,6 +1934,7 @@
       const panel = document.getElementById('historicoEquipesResultado');
 
       scoreInput.value = String(data.score);
+      ultimoHistoricoEquipes = data;
       panel.classList.remove('hidden');
       panel.innerHTML = [
         `<strong>Histórico das equipes:</strong> ${escaparHTML(data.resumo)}`,
@@ -1949,6 +1947,7 @@
     function limparHistoricoEquipes() {
       document.getElementById('historicoEquipesScore').value = '0';
       document.getElementById('historicoEquipesResultado').classList.add('hidden');
+      ultimoHistoricoEquipes = null;
     }
 
     async function atualizarCapacidadeLocal({ silencioso = false } = {}) {
@@ -1998,6 +1997,7 @@
     function preencherCapacidadeLocal(data) {
       const capacidade = Math.max(Number(data.capacidade || data.valor || 0), 0);
       const mediaPublico = Math.max(Number(data.mediaPublico || 0), 0);
+      ultimaCapacidadeLocal = data;
       document.getElementById('capacidadeMaximaDeclarada').value = capacidade ? String(capacidade) : '';
       document.getElementById('mediaPublicoLocal').value = mediaPublico ? String(mediaPublico) : '';
       document.getElementById('capacidadeLocalFonte').value = data.resumo || '';
@@ -2335,9 +2335,12 @@
       return escaparHTML(value).replaceAll('`', '&#096;');
     }
 
-    function criarResultadoLocal(factors) {
+    function criarResultadoLocal(factors, contextoBusca = {}) {
       const risco = calcularPontuacaoRisco(factors);
       const modelo = calcularRegressaoLogistica(factors);
+      const fontes = montarFontesBuscaAssistida(contextoBusca);
+      const origemBusca = contextoBusca.historico?.origem || contextoBusca.capacidade?.origem || 'local';
+      const buscaAssistidaConectada = fontes.length > 0 && /serpapi|google-custom-search/i.test(origemBusca);
       let nivel = 'baixo';
 
       if (risco >= 70) {
@@ -2348,11 +2351,30 @@
 
       return {
         risco,
-        fontes: [],
+        fontes,
         resumo: `Analise local para ${factors.equipesEnvolvidas} em ${factors.localEvento}. Risco ${nivel}, estimado por ${modelo.modelo.nome.toLowerCase()} com publico, historico pesquisado, rivalidade, tabela, campeonato, dia, meteorologia, conflitos, historico de objetos proibidos, seguranca privada, complexidade do local e sinais nas observacoes.`,
         detalhes: gerarDetalhesAnalise(factors),
-        buscaAssistidaConectada: false
+        buscaAssistidaConectada,
+        origemBuscaAssistida: origemBusca
       };
+    }
+
+    function montarFontesBuscaAssistida(contextoBusca = {}) {
+      const fontes = [];
+      const adicionar = (item) => {
+        if (!item || !item.url) return;
+        if (fontes.some((fonte) => fonte.link === item.url)) return;
+        fontes.push({
+          title: item.label || item.title || 'Fonte da busca assistida',
+          snippet: item.snippet || item.resumo || '',
+          displayLink: item.displayLink || '',
+          link: item.url
+        });
+      };
+
+      (contextoBusca.historico?.links || []).forEach(adicionar);
+      (contextoBusca.capacidade?.links || []).forEach(adicionar);
+      return fontes;
     }
 
     async function handleRiskSubmit(event) {
@@ -3091,7 +3113,7 @@
           rotulo: data.buscaAssistidaConectada ? 'sem evidência externa por tipicidade' : 'busca assistida não conectada',
           resumo: data.buscaAssistidaConectada
             ? 'A busca assistida não retornou evidências específicas por tipicidade para elevar probabilidades de incidentes.'
-            : 'A busca assistida/Google Custom Search não está conectada nesta execução; os índices externos por tipicidade foram mantidos em 0%.',
+            : 'A busca assistida externa não está conectada ou não retornou fontes nesta execução; os índices externos por tipicidade foram mantidos em 0%.',
           termos: [],
           fontesRelevantes: 0,
           porTipicidade: vazioPorTipicidade
