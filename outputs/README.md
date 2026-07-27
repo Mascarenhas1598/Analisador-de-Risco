@@ -19,7 +19,7 @@ http://localhost:4180/index.html
 Crie uma Programmable Search Engine e uma API key no Google Cloud. Depois rode:
 
 ```bash
-GOOGLE_CUSTOM_SEARCH_API_KEY="sua_api_key" GOOGLE_CSE_ID="seu_search_engine_id" npm start
+GOOGLE_CUSTOM_SEARCH_API_KEY="sua_api_key" GOOGLE_CUSTOM_SEARCH_CSE_ID="seu_search_engine_id" npm start
 ```
 
 O front-end chama:
@@ -79,7 +79,7 @@ Start Command: npm start
 
 ```text
 GOOGLE_CUSTOM_SEARCH_API_KEY=sua_api_key
-GOOGLE_CSE_ID=seu_search_engine_id
+GOOGLE_CUSTOM_SEARCH_CSE_ID=seu_search_engine_id
 APP_USERNAME=seu_usuario
 APP_PASSWORD=sua_senha
 ```
@@ -96,7 +96,7 @@ O Render vai gerar uma URL publica com HTTPS, acessivel pelo iPhone sem depender
 
 ```text
 GOOGLE_CUSTOM_SEARCH_API_KEY=sua_api_key
-GOOGLE_CSE_ID=seu_search_engine_id
+GOOGLE_CUSTOM_SEARCH_CSE_ID=seu_search_engine_id
 APP_USERNAME=seu_usuario
 APP_PASSWORD=sua_senha
 ```

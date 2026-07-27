@@ -10,7 +10,7 @@ Estado ancorado como versao atual do **Analisador de Risco - NM Engenharia e Con
 - Login sem credenciais expostas na tela ou no HTML.
 - Credenciais configuradas por variaveis de ambiente `APP_USERNAME` e `APP_PASSWORD`.
 - API local para historico de equipes.
-- Preparacao para Google Custom Search por `GOOGLE_CUSTOM_SEARCH_API_KEY` e `GOOGLE_CSE_ID`, mantendo compatibilidade com `GOOGLE_API_KEY` quando a chave exclusiva nao existir.
+- Preparacao para Google Custom Search por `GOOGLE_CUSTOM_SEARCH_API_KEY` e `GOOGLE_CUSTOM_SEARCH_CSE_ID`, mantendo compatibilidade com `GOOGLE_API_KEY` e `GOOGLE_CSE_ID` quando as variaveis exclusivas nao existirem.
 - Calculo de risco por regressao logistica.
 - Modelo Ba-Vi calibrado com base historica real, restrito a Bahia x Vitoria/Vitoria x Bahia em Arena Fonte Nova/Fonte Nova ou Barradao.
 - Base geral do Bahia `BASE-DADOS-NM.xlsx` integrada como base-mãe com 324 jogos ate abril de 2024.

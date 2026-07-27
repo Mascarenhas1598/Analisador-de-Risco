@@ -5,10 +5,13 @@ const path = require('node:path');
 const PORT = Number(process.env.PORT || 4180);
 const HOST = process.env.HOST || '0.0.0.0';
 const GOOGLE_CUSTOM_SEARCH_API_KEY = process.env.GOOGLE_CUSTOM_SEARCH_API_KEY || process.env.GOOGLE_API_KEY || '';
-const GOOGLE_CSE_ID = process.env.GOOGLE_CSE_ID || '';
+const GOOGLE_CUSTOM_SEARCH_CSE_ID = process.env.GOOGLE_CUSTOM_SEARCH_CSE_ID || process.env.GOOGLE_CSE_ID || '';
 const GOOGLE_KEY_SOURCE = process.env.GOOGLE_CUSTOM_SEARCH_API_KEY
   ? 'GOOGLE_CUSTOM_SEARCH_API_KEY'
   : (process.env.GOOGLE_API_KEY ? 'GOOGLE_API_KEY' : 'ausente');
+const GOOGLE_CSE_SOURCE = process.env.GOOGLE_CUSTOM_SEARCH_CSE_ID
+  ? 'GOOGLE_CUSTOM_SEARCH_CSE_ID'
+  : (process.env.GOOGLE_CSE_ID ? 'GOOGLE_CSE_ID' : 'ausente');
 const APP_USERNAME = process.env.APP_USERNAME || '';
 const APP_PASSWORD = process.env.APP_PASSWORD || '';
 const PUBLIC_DIR = __dirname;
@@ -79,10 +82,10 @@ const server = http.createServer(async (request, response) => {
 server.listen(PORT, HOST, () => {
   const displayHost = HOST === '0.0.0.0' ? 'localhost' : HOST;
   console.log(`Analisador de Risco em http://${displayHost}:${PORT}/index.html`);
-  if (!GOOGLE_CUSTOM_SEARCH_API_KEY || !GOOGLE_CSE_ID) {
-    console.log('Google nao configurado. Defina GOOGLE_CUSTOM_SEARCH_API_KEY e GOOGLE_CSE_ID para pesquisa real.');
+  if (!GOOGLE_CUSTOM_SEARCH_API_KEY || !GOOGLE_CUSTOM_SEARCH_CSE_ID) {
+    console.log('Google nao configurado. Defina GOOGLE_CUSTOM_SEARCH_API_KEY e GOOGLE_CUSTOM_SEARCH_CSE_ID para pesquisa real.');
   } else {
-    console.log(`Google Custom Search configurado via ${GOOGLE_KEY_SOURCE}; CSE ID informado.`);
+    console.log(`Google Custom Search configurado via ${GOOGLE_KEY_SOURCE}; CSE ID via ${GOOGLE_CSE_SOURCE}.`);
   }
   if (!APP_USERNAME || !APP_PASSWORD) {
     console.log('Login local nao configurado. Defina APP_USERNAME e APP_PASSWORD.');
@@ -132,7 +135,7 @@ async function handleHistoricoEquipes(request, response) {
   const query = `${equipes} historico confrontos rivalidade incidentes torcida seguranca estadio`;
   const searchURL = new URL('https://www.googleapis.com/customsearch/v1');
   searchURL.searchParams.set('key', GOOGLE_CUSTOM_SEARCH_API_KEY);
-  searchURL.searchParams.set('cx', GOOGLE_CSE_ID);
+  searchURL.searchParams.set('cx', GOOGLE_CUSTOM_SEARCH_CSE_ID);
   searchURL.searchParams.set('q', query);
   searchURL.searchParams.set('num', '5');
   searchURL.searchParams.set('lr', 'lang_pt');
@@ -254,7 +257,7 @@ async function handleCapacidadeLocal(request, response) {
   const query = `${localEvento} estadio capacidade maxima media publico jogos futebol`;
   const searchURL = new URL('https://www.googleapis.com/customsearch/v1');
   searchURL.searchParams.set('key', GOOGLE_CUSTOM_SEARCH_API_KEY);
-  searchURL.searchParams.set('cx', GOOGLE_CSE_ID);
+  searchURL.searchParams.set('cx', GOOGLE_CUSTOM_SEARCH_CSE_ID);
   searchURL.searchParams.set('q', query);
   searchURL.searchParams.set('num', '5');
   searchURL.searchParams.set('lr', 'lang_pt');
@@ -327,19 +330,20 @@ async function serveStatic(request, response) {
 
 function criarGoogleStatus() {
   const temApiKey = Boolean(GOOGLE_CUSTOM_SEARCH_API_KEY);
-  const temCseId = Boolean(GOOGLE_CSE_ID);
+  const temCseId = Boolean(GOOGLE_CUSTOM_SEARCH_CSE_ID);
   const faltando = [];
 
   if (!temApiKey) faltando.push('GOOGLE_CUSTOM_SEARCH_API_KEY');
-  if (!temCseId) faltando.push('GOOGLE_CSE_ID');
+  if (!temCseId) faltando.push('GOOGLE_CUSTOM_SEARCH_CSE_ID');
 
   return {
     configurado: temApiKey && temCseId,
     keySource: GOOGLE_KEY_SOURCE,
+    cseSource: GOOGLE_CSE_SOURCE,
     temApiKey,
     temCseId,
     apiKeyTamanho: GOOGLE_CUSTOM_SEARCH_API_KEY.length,
-    cseIdTamanho: GOOGLE_CSE_ID.length,
+    cseIdTamanho: GOOGLE_CUSTOM_SEARCH_CSE_ID.length,
     mensagem: faltando.length
       ? `variavel(is) ausente(s): ${faltando.join(', ')}`
       : 'variaveis recebidas pelo servidor'

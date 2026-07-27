@@ -21,7 +21,7 @@ Estado ancorado em `PROJECT_ANCHOR.md`.
 - Servidor Node em `server.js`.
 - API local `POST /api/historico-equipes`.
 - Simulacao de historico de equipes com scores locais.
-- Preparacao para Google Custom Search via `GOOGLE_CUSTOM_SEARCH_API_KEY` e `GOOGLE_CSE_ID`, com fallback para `GOOGLE_API_KEY`.
+- Preparacao para Google Custom Search via `GOOGLE_CUSTOM_SEARCH_API_KEY` e `GOOGLE_CUSTOM_SEARCH_CSE_ID`, com fallback para `GOOGLE_API_KEY` e `GOOGLE_CSE_ID`.
 - Calculo de risco por regressao logistica.
 - Modelo especifico Ba-Vi calibrado com base historica real `outputs/data/NM-BAxVI.xlsx`, aplicavel somente a Bahia x Vitoria/Vitoria x Bahia em Arena Fonte Nova/Fonte Nova ou Barradao.
 - Nova base historica geral do Bahia integrada em `outputs/data/BASE-DADOS-NM.xlsx` e `outputs/data/BASE-DADOS-NM.xls`, contendo 324 jogos ate abril de 2024.
@@ -119,5 +119,5 @@ http://localhost:4180/index.html
 ## Como rodar com Google Custom Search
 
 ```bash
-GOOGLE_CUSTOM_SEARCH_API_KEY="sua_api_key" GOOGLE_CSE_ID="seu_search_engine_id" npm start
+GOOGLE_CUSTOM_SEARCH_API_KEY="sua_api_key" GOOGLE_CUSTOM_SEARCH_CSE_ID="seu_search_engine_id" npm start
 ```
