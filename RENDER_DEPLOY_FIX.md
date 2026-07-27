@@ -13,6 +13,8 @@ Build Command: npm install
 Start Command: npm start
 ```
 
+Nao defina `HOST` no Environment do Render. Em producao, o servidor usa `0.0.0.0` automaticamente e respeita a porta `PORT` fornecida pelo Render.
+
 Nao configure Root Directory, ou deixe vazio.
 
 ## Variáveis de ambiente obrigatórias

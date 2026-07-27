@@ -3,7 +3,7 @@ const fs = require('node:fs/promises');
 const path = require('node:path');
 
 const PORT = Number(process.env.PORT || 4180);
-const HOST = process.env.HOST || '0.0.0.0';
+const HOST = process.env.NODE_ENV === 'production' ? '0.0.0.0' : (process.env.HOST || '0.0.0.0');
 const GOOGLE_CUSTOM_SEARCH_API_KEY = process.env.GOOGLE_CUSTOM_SEARCH_API_KEY || process.env.GOOGLE_API_KEY || '';
 const GOOGLE_CUSTOM_SEARCH_CSE_ID = process.env.GOOGLE_CUSTOM_SEARCH_CSE_ID || process.env.GOOGLE_CSE_ID || '';
 const GOOGLE_KEY_SOURCE = process.env.GOOGLE_CUSTOM_SEARCH_API_KEY
@@ -82,6 +82,7 @@ const server = http.createServer(async (request, response) => {
 server.listen(PORT, HOST, () => {
   const displayHost = HOST === '0.0.0.0' ? 'localhost' : HOST;
   console.log(`Analisador de Risco em http://${displayHost}:${PORT}/index.html`);
+  console.log(`Servidor vinculado em host=${HOST}, port=${PORT}, node_env=${process.env.NODE_ENV || 'local'}.`);
   if (!GOOGLE_CUSTOM_SEARCH_API_KEY || !GOOGLE_CUSTOM_SEARCH_CSE_ID) {
     console.log('Google nao configurado. Defina GOOGLE_CUSTOM_SEARCH_API_KEY e GOOGLE_CUSTOM_SEARCH_CSE_ID para pesquisa real.');
   } else {

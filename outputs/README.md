@@ -14,6 +14,8 @@ Abra:
 http://localhost:4180/index.html
 ```
 
+No Render, nao configure `HOST`. Em producao, o servidor vincula automaticamente em `0.0.0.0` e usa a porta `PORT` fornecida pelo Render.
+
 ## Conectar ao Google Custom Search
 
 Crie uma Programmable Search Engine e uma API key no Google Cloud. Depois rode:
