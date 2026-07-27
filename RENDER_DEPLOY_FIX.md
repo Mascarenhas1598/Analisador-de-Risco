@@ -29,6 +29,7 @@ APP_PASSWORD=sua_senha
 ```text
 GOOGLE_CUSTOM_SEARCH_API_KEY=sua_chave_google_custom_search
 GOOGLE_CUSTOM_SEARCH_CSE_ID=seu_cse_id
+SERPAPI_API_KEY=sua_chave_serpapi
 ```
 
 Depois de salvar as configurações, clique em **Manual Deploy** > **Clear build cache & deploy**.

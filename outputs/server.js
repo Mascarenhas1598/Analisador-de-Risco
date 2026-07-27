@@ -4,6 +4,7 @@ const path = require('node:path');
 
 const PORT = Number(process.env.PORT || 4180);
 const HOST = process.env.NODE_ENV === 'production' ? '0.0.0.0' : (process.env.HOST || '0.0.0.0');
+const SERPAPI_API_KEY = process.env.SERPAPI_API_KEY || '';
 const GOOGLE_CUSTOM_SEARCH_API_KEY = process.env.GOOGLE_CUSTOM_SEARCH_API_KEY || process.env.GOOGLE_API_KEY || '';
 const GOOGLE_CUSTOM_SEARCH_CSE_ID = process.env.GOOGLE_CUSTOM_SEARCH_CSE_ID || process.env.GOOGLE_CSE_ID || '';
 const GOOGLE_KEY_SOURCE = process.env.GOOGLE_CUSTOM_SEARCH_API_KEY
@@ -62,8 +63,8 @@ const server = http.createServer(async (request, response) => {
       return;
     }
 
-    if (request.method === 'GET' && request.url === '/api/google-status') {
-      sendJSON(response, 200, criarGoogleStatus());
+    if (request.method === 'GET' && (request.url === '/api/google-status' || request.url === '/api/busca-status')) {
+      sendJSON(response, 200, criarBuscaStatus());
       return;
     }
 
@@ -83,6 +84,9 @@ server.listen(PORT, HOST, () => {
   const displayHost = HOST === '0.0.0.0' ? 'localhost' : HOST;
   console.log(`Analisador de Risco em http://${displayHost}:${PORT}/index.html`);
   console.log(`Servidor vinculado em host=${HOST}, port=${PORT}, node_env=${process.env.NODE_ENV || 'local'}.`);
+  if (SERPAPI_API_KEY) {
+    console.log('SerpAPI configurada como provedor principal da busca assistida.');
+  }
   if (!GOOGLE_CUSTOM_SEARCH_API_KEY || !GOOGLE_CUSTOM_SEARCH_CSE_ID) {
     console.log('Google nao configurado. Defina GOOGLE_CUSTOM_SEARCH_API_KEY e GOOGLE_CUSTOM_SEARCH_CSE_ID para pesquisa real.');
   } else {
@@ -123,17 +127,50 @@ async function handleHistoricoEquipes(request, response) {
     return;
   }
 
-  const googleStatus = criarGoogleStatus();
+  const query = `${equipes} historico confrontos rivalidade incidentes torcida seguranca estadio`;
+  const buscaStatus = criarBuscaStatus();
+  const serpApiResult = await buscarSerpApi(query, 5);
+
+  if (serpApiResult.ok) {
+    const items = serpApiResult.items;
+    const local = criarHistoricoLocal(equipes, 'serpapi-google-search');
+    const incidentSignals = contarSinais(items, [
+      'incidente',
+      'conflito',
+      'briga',
+      'confusao',
+      'violencia',
+      'torcida',
+      'seguranca',
+      'classico',
+      'rivalidade'
+    ]);
+    const score = Math.min(local.score + Math.min(incidentSignals * 0.04, 0.18), 1);
+
+    sendJSON(response, 200, {
+      score,
+      origem: 'serpapi-google-search',
+      resumo: `SerpAPI retornou ${items.length} resultado(s). Score combina rivalidade local e sinais encontrados nos titulos/resumos.`,
+      buscaStatus,
+      links: items.map((item) => ({
+        label: item.title || 'Resultado',
+        url: item.link
+      })).filter((item) => item.url)
+    });
+    return;
+  }
+
+  const googleStatus = buscaStatus.google;
 
   if (!googleStatus.configurado) {
     const fallback = criarHistoricoLocal(equipes, 'local-sem-google');
-    fallback.resumo = `${fallback.resumo} Google Custom Search nao conectado: ${googleStatus.mensagem}.`;
+    fallback.resumo = `${fallback.resumo} Busca externa nao conectada: ${serpApiResult.mensagem || buscaStatus.mensagem}.`;
+    fallback.buscaStatus = buscaStatus;
     fallback.googleStatus = googleStatus;
     sendJSON(response, 200, fallback);
     return;
   }
 
-  const query = `${equipes} historico confrontos rivalidade incidentes torcida seguranca estadio`;
   const searchURL = new URL('https://www.googleapis.com/customsearch/v1');
   searchURL.searchParams.set('key', GOOGLE_CUSTOM_SEARCH_API_KEY);
   searchURL.searchParams.set('cx', GOOGLE_CUSTOM_SEARCH_CSE_ID);
@@ -243,19 +280,44 @@ async function handleCapacidadeLocal(request, response) {
 
   const fallback = calcularCapacidadeLocalServidor(localEvento);
 
-  const googleStatus = criarGoogleStatus();
+  const query = `${localEvento} estadio capacidade maxima media publico jogos futebol`;
+  const buscaStatus = criarBuscaStatus();
+  const serpApiResult = await buscarSerpApi(query, 5);
+
+  if (serpApiResult.ok) {
+    const items = serpApiResult.items;
+    const capacidadePesquisa = extrairCapacidadeDeResultados(items);
+    const capacidade = capacidadePesquisa || fallback.capacidade;
+    const mediaPublico = fallback.mediaPublico || Math.round(capacidade * 0.55);
+
+    sendJSON(response, 200, {
+      nome: fallback.nome,
+      capacidade,
+      mediaPublico,
+      origem: capacidadePesquisa ? 'serpapi-google-search' : 'local-com-serpapi',
+      resumo: `${fallback.nome}: capacidade máxima declarada ${capacidade.toLocaleString('pt-BR')}; média histórica operacional estimada ${mediaPublico.toLocaleString('pt-BR')}. SerpAPI retornou ${items.length} resultado(s).`,
+      buscaStatus,
+      links: items.map((item) => ({
+        label: item.title || 'Resultado',
+        url: item.link
+      })).filter((item) => item.url)
+    });
+    return;
+  }
+
+  const googleStatus = buscaStatus.google;
 
   if (!googleStatus.configurado) {
     sendJSON(response, 200, {
       ...fallback,
       origem: 'local-sem-google',
-      resumo: `${fallback.nome}: capacidade máxima declarada estimada em ${fallback.capacidade.toLocaleString('pt-BR')} e média histórica operacional estimada em ${fallback.mediaPublico.toLocaleString('pt-BR')}. Google Custom Search não conectado: ${googleStatus.mensagem}.`,
+      resumo: `${fallback.nome}: capacidade máxima declarada estimada em ${fallback.capacidade.toLocaleString('pt-BR')} e média histórica operacional estimada em ${fallback.mediaPublico.toLocaleString('pt-BR')}. Busca externa não conectada: ${serpApiResult.mensagem || buscaStatus.mensagem}.`,
+      buscaStatus,
       googleStatus
     });
     return;
   }
 
-  const query = `${localEvento} estadio capacidade maxima media publico jogos futebol`;
   const searchURL = new URL('https://www.googleapis.com/customsearch/v1');
   searchURL.searchParams.set('key', GOOGLE_CUSTOM_SEARCH_API_KEY);
   searchURL.searchParams.set('cx', GOOGLE_CUSTOM_SEARCH_CSE_ID);
@@ -327,6 +389,82 @@ async function serveStatic(request, response) {
   } catch (error) {
     sendText(response, 404, 'Arquivo nao encontrado.');
   }
+}
+
+async function buscarSerpApi(query, count = 5) {
+  if (!SERPAPI_API_KEY) {
+    return { ok: false, origem: 'serpapi-ausente', mensagem: 'SERPAPI_API_KEY ausente.' };
+  }
+
+  const url = new URL('https://serpapi.com/search.json');
+  url.searchParams.set('engine', 'google');
+  url.searchParams.set('q', query);
+  url.searchParams.set('api_key', SERPAPI_API_KEY);
+  url.searchParams.set('hl', 'pt-br');
+  url.searchParams.set('gl', 'br');
+  url.searchParams.set('num', String(count));
+
+  try {
+    const serpResponse = await fetch(url);
+
+    if (!serpResponse.ok) {
+      return {
+        ok: false,
+        origem: 'serpapi-falha',
+        status: serpResponse.status,
+        mensagem: `SerpAPI falhou com status ${serpResponse.status}.`
+      };
+    }
+
+    const data = await serpResponse.json();
+
+    if (data.error) {
+      return {
+        ok: false,
+        origem: 'serpapi-erro',
+        mensagem: `SerpAPI retornou erro: ${String(data.error).slice(0, 180)}.`
+      };
+    }
+
+    const organicResults = Array.isArray(data.organic_results) ? data.organic_results : [];
+    const newsResults = Array.isArray(data.news_results) ? data.news_results : [];
+    const items = [...organicResults, ...newsResults].slice(0, count).map((item) => ({
+      title: item.title || item.source || item.displayed_link || 'Resultado',
+      link: item.link || item.url,
+      snippet: item.snippet || item.description || item.date || '',
+      displayLink: item.displayed_link || item.source || ''
+    })).filter((item) => item.link);
+
+    return {
+      ok: true,
+      origem: 'serpapi-google-search',
+      status: data.search_metadata?.status || 'Success',
+      items
+    };
+  } catch (error) {
+    return {
+      ok: false,
+      origem: 'serpapi-conexao',
+      mensagem: `SerpAPI indisponivel: ${error.message}.`
+    };
+  }
+}
+
+function criarBuscaStatus() {
+  const google = criarGoogleStatus();
+
+  return {
+    configurado: Boolean(SERPAPI_API_KEY) || google.configurado,
+    provedorPrincipal: SERPAPI_API_KEY ? 'serpapi' : (google.configurado ? 'google-custom-search' : 'local'),
+    serpapi: {
+      configurado: Boolean(SERPAPI_API_KEY),
+      apiKeyTamanho: SERPAPI_API_KEY.length
+    },
+    google,
+    mensagem: SERPAPI_API_KEY
+      ? 'SerpAPI configurada.'
+      : (google.configurado ? 'Google Custom Search configurado.' : google.mensagem)
+  };
 }
 
 function criarGoogleStatus() {

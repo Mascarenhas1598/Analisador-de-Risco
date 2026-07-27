@@ -16,9 +16,15 @@ http://localhost:4180/index.html
 
 No Render, nao configure `HOST`. Em producao, o servidor vincula automaticamente em `0.0.0.0` e usa a porta `PORT` fornecida pelo Render.
 
-## Conectar ao Google Custom Search
+## Conectar a busca assistida
 
-Crie uma Programmable Search Engine e uma API key no Google Cloud. Depois rode:
+A opcao recomendada e SerpAPI. Configure a variavel no servidor:
+
+```bash
+SERPAPI_API_KEY="sua_chave_serpapi" npm start
+```
+
+O Google Custom Search fica apenas como fallback. Se for usa-lo, crie uma Programmable Search Engine e uma API key no Google Cloud. Depois rode:
 
 ```bash
 GOOGLE_CUSTOM_SEARCH_API_KEY="sua_api_key" GOOGLE_CUSTOM_SEARCH_CSE_ID="seu_search_engine_id" npm start
@@ -29,6 +35,7 @@ O front-end chama:
 ```text
 POST /api/historico-equipes
 POST /api/capacidade-local
+GET /api/busca-status
 ```
 
 Exemplo de entrada:
